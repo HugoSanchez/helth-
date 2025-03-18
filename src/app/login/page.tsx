@@ -8,41 +8,41 @@ import { supabase } from "@/lib/supabase"
 import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [email, setEmail] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState<string | null>(null)
-  const [isCheckingSession, setIsCheckingSession] = useState(true)
+	const router = useRouter()
+	const [email, setEmail] = useState('')
+	const [loading, setLoading] = useState(false)
+	const [message, setMessage] = useState<string | null>(null)
+	const [isCheckingSession, setIsCheckingSession] = useState(true)
 
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        console.log('Session check:', { hasSession: !!session })
-        if (session) {
-          console.log('Session found, redirecting to dashboard')
-          router.replace('/dashboard')
-        }
-      } catch (error) {
-        console.error('Session check error:', error)
-      } finally {
-        setIsCheckingSession(false)
-      }
-    }
+	useEffect(() => {
+		const checkSession = async () => {
+			try {
+				const { data: { session } } = await supabase.auth.getSession()
+				console.log('Session check:', { hasSession: !!session })
+				if (session) {
+					console.log('Session found, redirecting to dashboard')
+					router.replace('/dashboard')
+				}
+			} catch (error) {
+				console.error('Session check error:', error)
+			} finally {
+				setIsCheckingSession(false)
+			}
+		}
 
-    checkSession()
+		checkSession()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, !!session)
-      if (session) {
-        router.replace('/dashboard')
-      }
-    })
+		const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+			console.log('Auth state changed:', event, !!session)
+			if (session) {
+				router.replace('/dashboard')
+			}
+		})
 
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [router])
+		return () => {
+		subscription.unsubscribe()
+		}
+	}, [router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
