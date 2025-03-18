@@ -13,8 +13,13 @@ export default function DashboardPage() {
 	const searchParams = useSearchParams()
 	const [isLoading, setIsLoading] = useState(true)
 	const [isScanning, setIsScanning] = useState(false)
+	const [scanProgress, setScanProgress] = useState<{
+		processed: number;
+		medical: number;
+		done: boolean;
+	}>({ processed: 0, medical: 0, done: false })
 	const [hasGmailConnection, setHasGmailConnection] = useState(false)
-	const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+	const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info', text: string } | null>(null)
 
 	useEffect(() => {
 		const success = searchParams.get('success')
@@ -64,7 +69,11 @@ export default function DashboardPage() {
 	const handleScan = async () => {
 		try {
 			setIsScanning(true)
-			console.log('1. Starting scan request');
+			setScanProgress({ processed: 0, medical: 0, done: false })
+			setMessage({
+				type: 'info',
+				text: 'Scanning your last 50 emails...'
+			})
 
 			// Get the current session
 			const { data: { session } } = await supabase.auth.getSession()
@@ -72,26 +81,33 @@ export default function DashboardPage() {
 				throw new Error('No session found')
 			}
 
-			// Use Supabase's fetch method with auth headers
+			// Scan emails
 			const response = await fetch('/api/gmail/scan', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 					'Authorization': `Bearer ${session.access_token}`
-				}
+				},
+				body: JSON.stringify({})
 			})
 
-			console.log('2. Scan response status:', response.status);
-			const data = await response.json();
-			console.log('3. Scan response data:', data);
+			const data = await response.json()
 
 			if (!response.ok) {
-				throw new Error(`Failed to scan emails: ${data.error || 'Unknown error'}`);
+				throw new Error(data.error || 'Failed to scan emails')
 			}
 
+			// Update progress with final results
+			setScanProgress({
+				processed: data.messages.length,
+				medical: data.count,
+				done: true
+			})
+
+			// Scanning complete
 			setMessage({
 				type: 'success',
-				text: `Successfully scanned ${data.count} emails`
+				text: `Scan complete! Found ${data.count} medical emails out of ${data.messages.length} processed.`
 			})
 		} catch (error) {
 			console.error('Scan error:', error)
@@ -112,27 +128,36 @@ export default function DashboardPage() {
 		<div className="space-y-8">
 			{message && (
 				<div className={`rounded-lg px-4 py-3 ${
-					message.type === 'success'
-						? 'bg-teal-400 text-white'
-						: 'bg-transparent text-red-600 border border-red-600'
+					message.type === 'success' ? 'bg-teal-400 text-white' :
+					message.type === 'error' ? 'bg-transparent text-red-600 border border-red-600' :
+					'bg-blue-100 text-blue-800 border border-blue-300'
 				}`}>
 					<div className="flex items-center gap-2">
 						{message.type === 'success' ? (
 							<CheckCircle2 className="h-5 w-5 flex-shrink-0" />
-						) : (
+						) : message.type === 'error' ? (
 							<AlertCircle className="h-5 w-5 flex-shrink-0" />
+						) : (
+							<Search className="h-5 w-5 flex-shrink-0" />
 						)}
 						<p className="text-sm">{message.text}</p>
 					</div>
 				</div>
 			)}
+
+			{isScanning && !scanProgress.done && (
+				<div className="text-sm text-gray-600">
+					Processed {scanProgress.processed} emails, found {scanProgress.medical} medical records...
+				</div>
+			)}
+
 			<div className="flex items-center justify-between">
 				<h2 className="text-2xl font-bold">Your Health Records</h2>
 				{!hasGmailConnection ? (
 					<ConnectGmail />
 				) : (
 					<Button
-						onClick={handleScan}
+						onClick={() => handleScan()}
 						disabled={isScanning}
 						className="flex items-center gap-2"
 					>
@@ -143,7 +168,7 @@ export default function DashboardPage() {
 			</div>
 			<p className="text-gray-600">
 				{hasGmailConnection
-					? "Your Gmail account is connected. Click 'Scan Documents' to search for health records."
+					? "Your Gmail account is connected. Click 'Scan Documents' to search for health records in your last 50 emails."
 					: "Connect your Gmail account to start scanning for health records."}
 			</p>
 		</div>
