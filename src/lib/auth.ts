@@ -54,3 +54,27 @@ export async function getGmailAccount(userId: string) {
 
     return gmailAccount;
 }
+
+/**
+ * Check if a user has a Gmail account connected
+ *
+ * @param userId - Supabase user ID
+ * @returns Boolean indicating if user has a Gmail account connected
+ *
+ * @example
+ * const isConnected = await hasGmailConnection(userId);
+ */
+export async function hasGmailConnection(userId: string): Promise<boolean> {
+    const { data, error } = await supabaseAdmin
+        .from('gmail_accounts')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    if (error) {
+        console.error('Error checking Gmail connection:', error);
+        return false;
+    }
+
+    return !!data;
+}
