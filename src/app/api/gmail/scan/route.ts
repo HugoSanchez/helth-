@@ -3,8 +3,7 @@ import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { Database } from '@/types/database';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { analyzeEmailContent, analyzeDocument, AnalyzedEmail } from '@/lib/openai';
-import { classifyEmail } from '@/lib/email-classifier';
+import { analyzeEmailContent, analyzeDocument, AnalyzedEmail, screenEmailSubjects } from '@/lib/openai';
 
 /**
  * Helper function to retrieve and decode the content of an email attachment
@@ -28,9 +27,11 @@ async function getAttachmentContent(gmail: any, userId: string, messageId: strin
 
 export async function POST(request: Request) {
 	try {
+		console.log('Starting Gmail scan process...');
+
 		// Step 1: Authentication & Authorization
 		// ====================================
-		// Extract bearer token from Authorization header
+		console.log('Checking authorization...');
 		const authHeader = request.headers.get('Authorization');
 
 		if (!authHeader?.startsWith('Bearer ')) {
@@ -42,16 +43,18 @@ export async function POST(request: Request) {
 		const supabase = createServerComponentClient<Database>({ cookies });
 
 		// Verify user's identity using Supabase
+		console.log('Verifying user identity...');
 		const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken);
 
 		if (userError || !user) {
 			console.log('User authentication failed:', userError);
 			return Response.json({ error: 'Unauthorized' }, { status: 401 });
 		}
+		console.log('User authenticated successfully');
 
 		// Step 2: Gmail Account Access
 		// ===========================
-		// Retrieve user's Gmail tokens from our database
+		console.log('Retrieving Gmail account details...');
 		const { data: gmailAccount, error: gmailError } = await supabaseAdmin
 			.from('gmail_accounts')
 			.select('*')
@@ -59,10 +62,13 @@ export async function POST(request: Request) {
 			.single();
 
 		if (gmailError || !gmailAccount) {
+			console.log('Gmail account not found:', gmailError);
 			return Response.json({ error: 'Gmail account not found' }, { status: 404 });
 		}
+		console.log('Gmail account found');
 
-		// Initialize Gmail API client with user's tokens
+		// Initialize Gmail API client
+		console.log('Initializing Gmail API client...');
 		const oauth2Client = new google.auth.OAuth2(
 			process.env.GOOGLE_CLIENT_ID,
 			process.env.GOOGLE_CLIENT_SECRET,
@@ -75,16 +81,18 @@ export async function POST(request: Request) {
 		});
 
 		const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+		console.log('Gmail API client initialized');
 
 		// Step 3: Email Retrieval
 		// ======================
-		// Get exactly 50 most recent emails to avoid quota issues
+		console.log('Fetching email list...');
 		const messageList = await gmail.users.messages.list({
 			userId: 'me',
 			maxResults: 50
 		});
 
 		if (!messageList.data.messages) {
+			console.log('No messages found');
 			return Response.json({
 				message: 'No messages found',
 				count: 0,
@@ -92,20 +100,22 @@ export async function POST(request: Request) {
 				done: true
 			});
 		}
+		console.log(`Found ${messageList.data.messages.length} messages`);
 
 		// Step 4: Email Processing
 		// ======================
-		// Process each email to extract relevant information
+		console.log('Processing emails...');
 		const messages = await Promise.all(
 			messageList.data.messages.map(async (message) => {
-				// Get full message content including headers and body
+				console.log(`Processing message ${message.id}`);
+				// Get full message content
 				const msg = await gmail.users.messages.get({
 					userId: 'me',
 					id: message.id!,
 					format: 'full',
 				});
 
-				// Extract email headers
+				// Extract headers and process message
 				const headers = msg.data.payload?.headers?.reduce((acc: any, header) => {
 					acc[header.name!.toLowerCase()] = header.value;
 					return acc;
@@ -144,64 +154,31 @@ export async function POST(request: Request) {
 				};
 			})
 		);
+		console.log('Email processing completed');
 
-		// Step 5: Initial Screening with Transformer
-		// =======================================
-		const initialScreening = await Promise.all(
-			messages.map(msg => classifyEmail(msg))
-		);
+		// Step 5: Initial Screening with OpenAI
+		// ====================================
+		console.log('Starting subject screening...');
+		const subjects = messages.map(msg => ({ id: msg.id, subject: msg.subject }));
+		console.log('Subjects prepared for screening:', subjects);
 
-		// Filter messages that are likely medical
-		const potentialMedicalMessages = messages.filter((msg, index) =>
-			initialScreening[index].isMedical
-		);
+		const initialScreening = await screenEmailSubjects(subjects);
+		console.log('Subject screening completed');
 
-		// Step 6: Detailed Analysis of Potential Medical Emails
-		// =================================================
-		const analyzedMessages: AnalyzedEmail[] = await Promise.all(
-			potentialMedicalMessages.map(msg => analyzeEmailContent(msg))
-		);
+		// Return results
+		const response = {
+			message: 'Successfully screened email subjects',
+			total: subjects.length,
+			count: initialScreening.filter(result => result.isMedical).length,
+		};
+		console.log('Returning response:', response);
 
-		// Filter confirmed medical emails
-		const medicalEmails = analyzedMessages.filter(email => email.isMedical);
-
-		// Process attachments for confirmed medical emails
-		for (const email of medicalEmails) {
-			if (email.attachments.length > 0) {
-				const documentAnalyses = await Promise.all(
-					email.attachments.map(async (attachment) => {
-						if (!attachment.mimeType.match(/^(application\/pdf|text\/.*)/)) {
-							return null;
-						}
-
-						try {
-							const content = await getAttachmentContent(gmail, 'me', email.id, attachment.id);
-							return await analyzeDocument(content, attachment.filename);
-						} catch (error) {
-							console.error(`Error analyzing attachment ${attachment.filename}:`, error);
-							return null;
-						}
-					})
-				);
-
-				email.documentAnalysis = documentAnalyses.filter((analysis): analysis is NonNullable<typeof analysis> => analysis !== null);
-			}
-		}
-
-		// Sort by confidence
-		medicalEmails.sort((a, b) => b.confidence - a.confidence);
-
-		return Response.json({
-			message: 'Successfully analyzed messages and documents',
-			count: medicalEmails.length,
-			messages: medicalEmails,
-			done: true
-		});
+		return Response.json(response);
 
 	} catch (error) {
 		console.error('Error scanning Gmail:', error);
 		return Response.json(
-			{ error: 'Failed to scan Gmail messages' },
+			{ error: `Error scanning Gmail: ${error}` },
 			{ status: 500 }
 		);
 	}

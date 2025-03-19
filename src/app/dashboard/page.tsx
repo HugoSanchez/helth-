@@ -92,23 +92,8 @@ export default function DashboardPage() {
 			})
 
 			const data = await response.json()
+			console.log('data', data)
 
-			if (!response.ok) {
-				throw new Error(data.error || 'Failed to scan emails')
-			}
-
-			// Update progress with final results
-			setScanProgress({
-				processed: data.messages.length,
-				medical: data.count,
-				done: true
-			})
-
-			// Scanning complete
-			setMessage({
-				type: 'success',
-				text: `Scan complete! Found ${data.count} medical emails out of ${data.messages.length} processed.`
-			})
 		} catch (error) {
 			console.error('Scan error:', error)
 			setMessage({
