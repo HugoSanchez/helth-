@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { Database } from '@/types/database';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { analyzeEmailContent, analyzeDocument, AnalyzedEmail } from '@/lib/openai';
+import { classifyEmail } from '@/lib/email-classifier';
 
 /**
  * Helper function to retrieve and decode the content of an email attachment
@@ -101,31 +102,22 @@ export async function POST(request: Request) {
 				const msg = await gmail.users.messages.get({
 					userId: 'me',
 					id: message.id!,
-					format: 'full', // Get complete message data
+					format: 'full',
 				});
 
-				// Extract email headers (subject, from, date, etc.)
+				// Extract email headers
 				const headers = msg.data.payload?.headers?.reduce((acc: any, header) => {
 					acc[header.name!.toLowerCase()] = header.value;
 					return acc;
 				}, {});
 
-				// Initialize variables for email content
 				let body = '';
 				const attachments: Array<{ id: string; filename: string; mimeType: string }> = [];
 
-				/**
-				 * Recursive function to process email parts
-				 * Gmail messages can be complex with nested parts (multipart/alternative, multipart/mixed, etc.)
-				 * This function traverses all parts to extract text content and find attachments
-				 */
 				function processPayloadPart(part: any) {
-					// If part has data, it's email content
 					if (part.body?.data) {
 						body += Buffer.from(part.body.data, 'base64').toString();
 					}
-
-					// If part has attachmentId, it's an attachment
 					if (part.body?.attachmentId) {
 						attachments.push({
 							id: part.body.attachmentId,
@@ -133,19 +125,15 @@ export async function POST(request: Request) {
 							mimeType: part.mimeType || 'application/octet-stream',
 						});
 					}
-
-					// If part has sub-parts, process them recursively
 					if (part.parts) {
 						part.parts.forEach(processPayloadPart);
 					}
 				}
 
-				// Start processing from the root payload
 				if (msg.data.payload) {
 					processPayloadPart(msg.data.payload);
 				}
 
-				// Return structured email data
 				return {
 					id: msg.data.id!,
 					subject: headers?.subject || '',
@@ -157,29 +145,36 @@ export async function POST(request: Request) {
 			})
 		);
 
-		// Step 5: Medical Content Analysis
-		// ==============================
-		// Phase 1: Initial screening of all emails
-		const analyzedMessages: AnalyzedEmail[] = await Promise.all(
-			messages.map(msg => analyzeEmailContent(msg))
+		// Step 5: Initial Screening with Transformer
+		// =======================================
+		const initialScreening = await Promise.all(
+			messages.map(msg => classifyEmail(msg))
 		);
 
-		// Filter out non-medical emails
+		// Filter messages that are likely medical
+		const potentialMedicalMessages = messages.filter((msg, index) =>
+			initialScreening[index].isMedical
+		);
+
+		// Step 6: Detailed Analysis of Potential Medical Emails
+		// =================================================
+		const analyzedMessages: AnalyzedEmail[] = await Promise.all(
+			potentialMedicalMessages.map(msg => analyzeEmailContent(msg))
+		);
+
+		// Filter confirmed medical emails
 		const medicalEmails = analyzedMessages.filter(email => email.isMedical);
 
-		// Phase 2: Detailed analysis of attachments in medical emails
+		// Process attachments for confirmed medical emails
 		for (const email of medicalEmails) {
 			if (email.attachments.length > 0) {
-				// Process each attachment in parallel
 				const documentAnalyses = await Promise.all(
 					email.attachments.map(async (attachment) => {
-						// Only process text-based documents (PDFs and text files)
 						if (!attachment.mimeType.match(/^(application\/pdf|text\/.*)/)) {
 							return null;
 						}
 
 						try {
-							// Get attachment content and analyze it
 							const content = await getAttachmentContent(gmail, 'me', email.id, attachment.id);
 							return await analyzeDocument(content, attachment.filename);
 						} catch (error) {
@@ -189,12 +184,11 @@ export async function POST(request: Request) {
 					})
 				);
 
-				// Add successful analyses to the email object
 				email.documentAnalysis = documentAnalyses.filter((analysis): analysis is NonNullable<typeof analysis> => analysis !== null);
 			}
 		}
 
-		// Sort emails by confidence score (highest first)
+		// Sort by confidence
 		medicalEmails.sort((a, b) => b.confidence - a.confidence);
 
 		return Response.json({

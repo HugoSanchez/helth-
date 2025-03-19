@@ -7,22 +7,22 @@ import SupabaseProvider from '../components/supabase-provider'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Health Records Manager',
-  description: 'Automatically organize your health records from Gmail',
+	title: 'Health Records Manager',
+	description: 'Automatically organize your health records from Gmail',
 }
 
 export default function RootLayout({
-  children,
+ 	children,
 }: {
-  children: React.ReactNode
+  	children: React.ReactNode
 }) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-        <SupabaseProvider>
-          <Providers>{children}</Providers>
-        </SupabaseProvider>
-      </body>
-    </html>
-  )
+	return (
+		<html lang="en" suppressHydrationWarning>
+			<body className={inter.className}>
+				<SupabaseProvider>
+					<Providers>{children}</Providers>
+				</SupabaseProvider>
+			</body>
+		</html>
+	)
 }

@@ -14,10 +14,8 @@ export default function SupabaseProvider({
 
 	useEffect(() => {
 		const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-		if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-			router.replace('/dashboard')
-		} else if (!session && event === 'SIGNED_OUT') {
-			router.replace('/login')
+		if (!session && event === 'SIGNED_OUT') {
+				router.replace('/login')
 			}
 		})
 
