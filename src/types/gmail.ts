@@ -29,24 +29,38 @@ export interface GmailAttachment {
 }
 
 /**
- * Response format for the frontend
+ * Classification result for a single email
+ */
+export interface EmailClassification {
+    /** Gmail message ID */
+    id: string;
+    /** Email subject */
+    subject: string;
+    /** From address */
+    from: string;
+    /** Email date */
+    date: string;
+    /** Classification results */
+    classification: {
+        /** Whether the email contains medical information */
+        isMedical: boolean;
+        /** Confidence score of the classification */
+        confidence: number;
+    };
+    /** Attachment information */
+    attachments: GmailAttachment[];
+}
+
+/**
+ * Response format for the Gmail scan endpoint
  */
 export interface GmailScanResponse {
     /** Status message indicating the result of the operation */
     message: string;
-    /** Total number of emails processed */
+    /** Total number of emails with attachments found */
     total: number;
-    /** Number of medical emails found */
-    count: number;
-    /** Array of processed messages with their classifications */
-    messages: Array<{
-        id: string;
-        subject: string;
-        classification: {
-            isMedical: boolean;
-            confidence: number;
-        };
-    }>;
-    /** Indicates if the scanning process is complete */
-    done: boolean;
+    /** Number of emails classified as medical */
+    medicalCount: number;
+    /** Classification results for all emails with attachments */
+    results: EmailClassification[];
 }

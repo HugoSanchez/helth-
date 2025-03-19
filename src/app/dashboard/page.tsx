@@ -7,6 +7,7 @@ import { ConnectGmail } from '@/components/connect-gmail'
 import { StatusMessage } from '@/components/status-message'
 import { Button } from '@/components/ui/button'
 import { Search } from 'lucide-react'
+import { EmailClassification } from '@/types/gmail'
 
 export default function DashboardPage() {
 	const router = useRouter()
@@ -50,14 +51,15 @@ export default function DashboardPage() {
 	async function handleScan() {
 		try {
 			setIsScanning(true)
-			setMessage(null)
+			setMessage({ type: 'info', text: 'Scanning emails for medical documents...' })
 
 			const { data: { session } } = await supabase.auth.getSession()
 			if (!session) {
 				throw new Error('No session found')
 			}
 
-			const response = await fetch('/api/gmail/scan', {
+			// Step 1: Scan emails
+			const scanResponse = await fetch('/api/gmail/scan', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -65,19 +67,45 @@ export default function DashboardPage() {
 				}
 			})
 
-			if (!response.ok) {
+			if (!scanResponse.ok) {
 				throw new Error('Failed to scan emails')
 			}
 
-			const data = await response.json()
+			const scanData = await scanResponse.json()
+			const medicalEmails = scanData.results.filter((email: EmailClassification) =>
+				email.classification.isMedical
+			)
+
+			if (medicalEmails.length === 0) {
+				setMessage({ type: 'info', text: 'No medical documents found in scanned emails.' })
+				return
+			}
+
+			// Step 2: Store medical documents
+			setMessage({ type: 'info', text: `Found ${medicalEmails.length} medical emails. Storing documents...` })
+
+			const storeResponse = await fetch('/api/gmail/store', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${session.access_token}`
+				},
+				body: JSON.stringify({ emails: medicalEmails })
+			})
+
+			if (!storeResponse.ok) {
+				throw new Error('Failed to store medical documents')
+			}
+
+			const storeData = await storeResponse.json()
 			setMessage({
 				type: 'success',
-				text: `Scan complete! Found ${data.count} medical emails.`
+				text: `Successfully stored ${storeData.stored} medical documents. Failed: ${storeData.failed}`
 			})
 
 		} catch (err) {
 			console.error('Scan error:', err)
-			setMessage({ type: 'error', text: 'Failed to scan emails' })
+			setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to process emails' })
 		} finally {
 			setIsScanning(false)
 		}
@@ -101,7 +129,7 @@ export default function DashboardPage() {
 						className="w-full sm:w-auto"
 					>
 						<Search className="mr-2 h-4 w-4" />
-						{isScanning ? "Scanning..." : "Scan Emails"}
+						{isScanning ? "Processing..." : "Scan Medical Documents"}
 					</Button>
 				)}
 			</div>

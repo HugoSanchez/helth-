@@ -68,49 +68,80 @@ export function processEmailPayload(payload: any): { body: string; attachments: 
 /**
  * Fetch and process multiple email messages from Gmail
  * Retrieves full message content and processes headers, body, and attachments
+ * Only returns messages that have attachments, limited to first 20
  *
  * @param gmail - Initialized Gmail API client
- * @param maxResults - Maximum number of messages to fetch (default: 50)
- * @returns Array of processed Gmail messages
- *
- * @example
- * const messages = await fetchAndProcessEmails(gmailClient);
+ * @returns Array of processed Gmail messages (max 20 with attachments)
  */
-export async function fetchAndProcessEmails(gmail: any, maxResults: number = 50): Promise<GmailMessage[]> {
-    const messageList = await gmail.users.messages.list({
-        userId: 'me',
-        maxResults
-    });
+export async function fetchAndProcessEmails(gmail: any): Promise<GmailMessage[]> {
+    const processedMessages: GmailMessage[] = [];
+    let pageToken: string | undefined = undefined;
 
-    if (!messageList.data.messages) {
-        return [];
+    // Continue fetching pages until we find 20 emails with attachments or run out of emails
+    while (processedMessages.length < 20) {
+        console.log(`Fetching next page of messages. Currently have ${processedMessages.length} with attachments...`);
+
+        // Get next batch of message IDs
+        const messageList: { data: { messages?: { id: string }[], nextPageToken?: string } } = await gmail.users.messages.list({
+            userId: 'me',
+            maxResults: 50,
+            pageToken
+        });
+
+        // If no more messages, break
+        if (!messageList.data.messages) {
+            console.log('No more messages to process');
+            break;
+        }
+
+        // Save next page token for subsequent requests
+        pageToken = messageList.data.nextPageToken;
+
+        // Process this batch of messages
+        for (const message of messageList.data.messages) {
+            if (processedMessages.length >= 20) break;
+
+            try {
+                const msg = await gmail.users.messages.get({
+                    userId: 'me',
+                    id: message.id!,
+                    format: 'full',
+                });
+
+                const headers = msg.data.payload?.headers?.reduce((acc: any, header: any) => {
+                    acc[header.name!.toLowerCase()] = header.value;
+                    return acc;
+                }, {});
+
+                const { body, attachments } = processEmailPayload(msg.data.payload);
+
+                // Only include messages with attachments
+                if (attachments.length > 0) {
+                    processedMessages.push({
+                        id: msg.data.id!,
+                        subject: headers?.subject || '',
+                        from: headers?.from || '',
+                        date: headers?.date || '',
+                        body,
+                        attachments,
+                    });
+                    console.log(`Found email with ${attachments.length} attachment(s). Total found: ${processedMessages.length}`);
+                }
+            } catch (error) {
+                console.error('Error processing message:', error);
+                continue;
+            }
+        }
+
+        // If no next page, we've processed all available emails
+        if (!pageToken) {
+            console.log('No more pages to fetch');
+            break;
+        }
     }
 
-    return Promise.all(
-        messageList.data.messages.map(async (message: any) => {
-            const msg = await gmail.users.messages.get({
-                userId: 'me',
-                id: message.id!,
-                format: 'full',
-            });
-
-            const headers = msg.data.payload?.headers?.reduce((acc: any, header: any) => {
-                acc[header.name!.toLowerCase()] = header.value;
-                return acc;
-            }, {});
-
-            const { body, attachments } = processEmailPayload(msg.data.payload);
-
-            return {
-                id: msg.data.id!,
-                subject: headers?.subject || '',
-                from: headers?.from || '',
-                date: headers?.date || '',
-                body,
-                attachments,
-            };
-        })
-    );
+    console.log(`Completed search. Found ${processedMessages.length} messages with attachments`);
+    return processedMessages;
 }
 
 /**
@@ -126,16 +157,16 @@ export async function fetchAndProcessEmails(gmail: any, maxResults: number = 50)
  * const content = await getAttachmentContent(gmail, 'me', messageId, attachmentId);
  */
 export async function getAttachmentContent(
-    gmail: any,
-    userId: string,
-    messageId: string,
-    attachmentId: string
+	gmail: any,
+	userId: string,
+	messageId: string,
+	attachmentId: string
 ): Promise<string> {
-    const attachment = await gmail.users.messages.attachments.get({
-        userId,
-        messageId,
-        id: attachmentId,
-    });
+	const attachment = await gmail.users.messages.attachments.get({
+		userId,
+		messageId,
+		id: attachmentId,
+	});
 
-    return Buffer.from(attachment.data.data, 'base64').toString();
+	return Buffer.from(attachment.data.data, 'base64').toString();
 }
