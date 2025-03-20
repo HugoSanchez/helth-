@@ -6,14 +6,16 @@ import { supabase } from '@/lib/supabase'
 import { ConnectGmail } from '@/components/ConnectGmailButton'
 import { StatusMessage } from '@/components/StatusMessage'
 import { Button } from '@/components/ui/button'
-import { Search } from 'lucide-react'
+import { Search, Upload } from 'lucide-react'
 import { EmailClassification } from '@/types/gmail'
+import { UploadDrawer } from '@/components/UploadDrawer'
 
 export default function DashboardPage() {
 	const router = useRouter()
 	const searchParams = useSearchParams()
 	const [isConnected, setIsConnected] = useState(false)
 	const [isScanning, setIsScanning] = useState(false)
+	const [isUploadOpen, setIsUploadOpen] = useState(false)
 	const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info', text: string } | null>(null)
 
 	// Check connection status on mount and when URL params change
@@ -113,7 +115,13 @@ export default function DashboardPage() {
 
 	return (
 		<main className="container max-w-4xl py-8 space-y-8">
-			<h1 className="text-2xl font-bold">Dashboard</h1>
+			<div className="flex justify-between items-center">
+				<h1 className="text-2xl font-bold">Dashboard</h1>
+				<Button onClick={() => setIsUploadOpen(true)} variant="outline">
+					<Upload className="mr-2 h-4 w-4" />
+					Upload Document
+				</Button>
+			</div>
 
 			{message && (
 				<StatusMessage type={message.type} text={message.text} />
@@ -133,6 +141,11 @@ export default function DashboardPage() {
 					</Button>
 				)}
 			</div>
+
+			<UploadDrawer
+				isOpen={isUploadOpen}
+				onClose={() => setIsUploadOpen(false)}
+			/>
 		</main>
 	)
 }
