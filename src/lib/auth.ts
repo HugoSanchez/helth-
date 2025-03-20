@@ -1,7 +1,75 @@
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { Database } from '@/types/database';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { NextResponse } from 'next/server';
+
+/**
+ * Backend utility to verify user authentication in API routes
+ * Returns the user ID if authenticated, throws error if not
+ */
+export async function authenticateRequest() {
+    const supabase = createRouteHandlerClient({ cookies })
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (!session) {
+        throw new Error('Unauthorized')
+    }
+
+    return session.user.id
+}
+
+/**
+ * Backend utility to handle API route authentication
+ * Wraps the route handler with authentication check
+ */
+export function withAuth(handler: (userId: string, req: Request) => Promise<Response>) {
+    console.log('withAuth')
+	return async (req: Request) => {
+        try {
+            const userId = await authenticateRequest()
+            return handler(userId, req)
+        } catch (error) {
+            console.error('[Auth] Error:', error)
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            )
+        }
+    }
+}
+
+/**
+ * Frontend utility to make authenticated fetch requests
+ * Automatically handles auth headers and error responses
+ */
+export async function fetchWithAuth(
+    url: string,
+    options: RequestInit = {}
+) {
+    try {
+        const response = await fetch(url, {
+            ...options,
+            headers: {
+                ...options.headers,
+            }
+        })
+
+        if (response.status === 401) {
+            throw new Error('Unauthorized')
+        }
+
+        if (!response.ok) {
+            throw new Error(`Request failed: ${response.statusText}`)
+        }
+
+        return response
+    } catch (error) {
+        console.error('Request error:', error)
+        throw error
+    }
+}
 
 /**
  * Authenticate user using Supabase and retrieve their user ID
