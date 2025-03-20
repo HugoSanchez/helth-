@@ -77,29 +77,6 @@
 	}
 	body {
 		@apply bg-background text-foreground;
-		@apply font-serif;
+		@apply font-sans;
 	}
-}
-
-
-
-@layer base {
-  * {
-  }
-  p {
-    @apply text-inter;
-  }
-}
-
-/* Using the fonts in CSS */
-.text-inter {
-  font-family: var(--font-inter);
-}
-
-.text-mono {
-  font-family: var(--font-roboto-mono);
-}
-
-.text-poppins {
-  font-family: var(--font-poppins);
 }

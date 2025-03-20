@@ -10,11 +10,8 @@ const config: Config = {
   theme: {
   	extend: {
 		fontFamily: {
-			sans: ['var(--font-roboto-flex)'],
+			sans: ['var(--font-work-sans)'],
 			serif: ['var(--font-roboto-serif)'],
-			// Custom names
-			heading: ['var(--font-roboto-serif)'],
-			paragraph: ['var(--font-roboto-flex)'],
 		},
   		backgroundImage: {
   			'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

@@ -51,7 +51,7 @@ export default function LoginPage() {
 			})
 
 			if (error) throw error
-			setMessage('Check your email for the login link!')
+			setMessage('Check your email!')
 		} catch (error) {
 			setMessage('Error sending magic link')
 		} finally {
@@ -65,37 +65,38 @@ export default function LoginPage() {
 
 	return (
 		<div className="min-h-screen flex items-center justify-center bg-gray-50">
-		<Card className="w-[350px]">
-			<CardHeader>
-			<CardTitle>Welcome to Health Records</CardTitle>
-			<CardDescription>
-				Sign in via magic link with your email below
-			</CardDescription>
-			</CardHeader>
-			<CardContent>
-			<form onSubmit={handleLogin} className="space-y-4">
-				<Input
-				type="email"
-				placeholder="Your email"
-				value={email}
-				onChange={(e) => setEmail(e.target.value)}
-				required
-				/>
-				<Button
-				type="submit"
-				className="w-full"
-				disabled={loading}
-				>
-				{loading ? 'Sending magic link...' : 'Send magic link'}
-				</Button>
-				{message && (
-				<p className={`text-sm ${message.includes('Error') ? 'text-red-500' : 'text-green-500'}`}>
-					{message}
-				</p>
-				)}
-			</form>
-			</CardContent>
-		</Card>
+			<Card className="w-[350px] py-4">
+				<CardHeader className="text-center">
+				<CardTitle className="text-2xl">Welcome to Helth</CardTitle>
+				<CardDescription className="">
+					Sign in via magic link with your email below
+				</CardDescription>
+				</CardHeader>
+				<CardContent>
+				<form onSubmit={handleLogin} className="space-y-4">
+					<Input
+						type="email"
+						className="h-12 text-md"
+						placeholder="Your email"
+						value={email}
+						onChange={(e) => setEmail(e.target.value)}
+						required
+					/>
+					<Button
+						type="submit"
+						className="w-full h-12 text-md"
+						disabled={loading}
+					>
+					{loading ? 'Sending magic link...' : 'Get magic link'}
+					</Button>
+					{message && (
+					<p className={`text-md font-regular text-center ${message.includes('Error') ? 'text-red-500' : 'text-teal-500'}`}>
+						{message}
+					</p>
+					)}
+				</form>
+				</CardContent>
+			</Card>
 		</div>
 	)
 }
