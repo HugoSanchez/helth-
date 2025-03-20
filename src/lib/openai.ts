@@ -191,53 +191,77 @@ export async function analyzeEmailContent(email: EmailContent): Promise<Analyzed
     };
 }
 
-export async function analyzeDocument(content: string, filename: string): Promise<DocumentAnalysis> {
-    const prompt = `Analyze this medical document and extract key information. The document is named "${filename}" and contains:
+// Add a type that matches our DB schema
+interface HealthRecord {
+    record_type: "lab_report" | "prescription" | "imaging" | "clinical_notes" | "other"
+    record_name: string
+    summary: string
+    doctor_name: string | null
+    date: string | null
+}
 
-        ${content}
-
-        Provide your analysis in the following JSON format:
-        {
-            "type": "lab_report" | "prescription" | "imaging" | "clinical_notes" | "other",
-            "summary": "brief overview of the document",
-            "keyFindings": ["list", "of", "important", "findings"],
-            "dates": {
-                "documentDate": "date of document if present",
-                "testDate": "date of tests/procedures if present",
-                "followUpDate": "recommended follow-up date if present"
-            },
-            "provider": {
-                "name": "provider name if present",
-                "facility": "facility name if present"
-            },
-            "measurements": {
-                "measurement_name": {
-                    "value": "measured value",
-                    "unit": "unit of measurement",
-                    "normalRange": "normal range if provided",
-                    "isAbnormal": boolean
-                }
-            }
-        }`;
-
+export async function analyzeDocument(fileId: string, filename: string): Promise<HealthRecord> {
     const response = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
+        model: "gpt-4-vision-preview",
         messages: [
             {
                 role: "system",
-                content: "You are a medical document analyzer specializing in extracting structured information from medical documents."
+                content: "You are a medical document analyzer. Extract key information from medical documents and format it according to the specified schema."
             },
             {
                 role: "user",
-                content: prompt
+                content: [
+                    {
+                        type: "text",
+                        text: `Analyze this medical document named "${filename}" and extract key information.`
+                    },
+                    {
+                        type: "file_path",
+                        file_path: fileId,
+                    }
+                ]
             }
         ],
-        response_format: { type: "json_object" }
-    });
+        functions: [
+            {
+                name: "processHealthRecord",
+                description: "Process and structure medical document information",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        record_type: {
+                            type: "string",
+                            enum: ["lab_report", "prescription", "imaging", "clinical_notes", "other"],
+                            description: "The type of medical record"
+                        },
+                        record_name: {
+                            type: "string",
+                            description: "A descriptive name for the record, based on its contents"
+                        },
+                        summary: {
+                            type: "string",
+                            description: "A brief summary of the document's key information"
+                        },
+                        doctor_name: {
+                            type: "string",
+                            description: "The name of the healthcare provider, if present"
+                        },
+                        date: {
+                            type: "string",
+                            description: "The document date in ISO format (YYYY-MM-DD), if present"
+                        }
+                    },
+                    required: ["record_type", "record_name", "summary"]
+                }
+            }
+        ],
+        function_call: { name: "processHealthRecord" }
+    })
 
-    if (!response.choices[0].message.content) {
-        throw new Error('No response content from OpenAI');
+    if (!response.choices[0].message.function_call) {
+        throw new Error('Expected function call in response')
     }
 
-    return JSON.parse(response.choices[0].message.content) as DocumentAnalysis;
+    const result = JSON.parse(response.choices[0].message.function_call.arguments)
+    return result
 }

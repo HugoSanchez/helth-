@@ -6,8 +6,9 @@ import SupabaseProvider from '../components/providers/SupabaseProvider'
 const robotoSerif = Roboto_Serif({ subsets: ['latin'], weight: ['200', '300', '400', '500', '600', '700'], variable: '--font-roboto-serif' })
 const robotoFlex = Roboto_Flex({ subsets: ['latin'], weight: ['200', '300', '400', '500', '600', '700'],variable: '--font-roboto-flex' })
 const workSans = Work_Sans({ subsets: ['latin'], weight: ['200', '300', '400', '500', '600', '700'], variable: '--font-work-sans' })
+
 export const metadata: Metadata = {
-	title: 'Health Records Manager',
+	title: 'Helth.',
 	description: 'Automatically organize your health records from Gmail',
 }
 
