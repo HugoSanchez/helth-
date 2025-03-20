@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Roboto_Serif, Roboto_Flex } from 'next/font/google'
 import './globals.css'
-import { Providers } from '../app/providers'
-import SupabaseProvider from '../components/supabase-provider'
+import SupabaseProvider from '../components/providers/SupabaseProvider'
 
-const inter = Inter({ subsets: ['latin'] })
+const robotoSerif = Roboto_Serif({ subsets: ['latin'], variable: '--font-roboto-serif' })
+const robotoFlex = Roboto_Flex({ subsets: ['latin'], variable: '--font-roboto-flex' })
 
 export const metadata: Metadata = {
 	title: 'Health Records Manager',
@@ -12,15 +12,15 @@ export const metadata: Metadata = {
 }
 
 export default function RootLayout({
- 	children,
+	children,
 }: {
-  	children: React.ReactNode
+	children: React.ReactNode
 }) {
 	return (
 		<html lang="en" suppressHydrationWarning>
-			<body className={inter.className}>
+			<body className={`${robotoFlex.variable} ${robotoSerif.variable}`}>
 				<SupabaseProvider>
-					<Providers>{children}</Providers>
+					{children}
 				</SupabaseProvider>
 			</body>
 		</html>

@@ -19,25 +19,25 @@ export function Header() {
 	}
 
 	return (
-		<header className="bg-white shadow">
-		<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-			<h1 className="text-xl font-bold">helz.</h1>
-			<DropdownMenu>
-			<DropdownMenuTrigger>
-				<Avatar>
-				<AvatarFallback>U</AvatarFallback>
-				</Avatar>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent align="end">
-				<DropdownMenuItem
-				className="cursor-pointer"
-				onClick={handleSignOut}
-				>
-				Sign out
-				</DropdownMenuItem>
-			</DropdownMenuContent>
-			</DropdownMenu>
-		</div>
+		<header className="">
+			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+				<h1 className="text-lg font-heading">Helth.</h1>
+				<DropdownMenu>
+				<DropdownMenuTrigger>
+					<Avatar>
+					<AvatarFallback>U</AvatarFallback>
+					</Avatar>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align="end">
+					<DropdownMenuItem
+					className="cursor-pointer"
+					onClick={handleSignOut}
+					>
+					Sign out
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+				</DropdownMenu>
+			</div>
 		</header>
 	)
 }
