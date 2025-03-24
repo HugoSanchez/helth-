@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Search, Upload } from 'lucide-react'
 import { EmailClassification } from '@/types/gmail'
 import { UploadDrawer } from '@/components/UploadDrawer'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function DashboardPage() {
 	const router = useRouter()
@@ -114,33 +115,49 @@ export default function DashboardPage() {
 	}
 
 	return (
-		<main className="container max-w-4xl py-8 space-y-8">
-			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold">Dashboard</h1>
-				<Button onClick={() => setIsUploadOpen(true)} variant="outline">
-					<Upload className="mr-2 h-4 w-4" />
-					Upload Document
-				</Button>
+		<main className="container py-8 space-y-8">
+			<div className="flex justify-between items-center pb-4">
+				<h1 className="text-2xl font-bold"></h1>
 			</div>
+			<div className="flex items-center justify-center">
+				<Card className="w-[600px]">
+					<CardHeader>
+						<CardTitle className='text-center'>Welcome to Helth.!</CardTitle>
+						<CardDescription className='text-center'>This will be your Dashboard. Start by scanning your emails for medical documents or you can upload your first document. </CardDescription>
+					</CardHeader>
+					<CardContent>
+						<div className="mt-4 mb-4">
+							{!isConnected ? (
+								<ConnectGmail />
+							) : (
+								<Button
+									onClick={handleScan}
+									disabled={isScanning}
+									className="w-full h-12"
+								>
+									<Search className="mr-2 h-4 w-4" />
+									{isScanning ? "Processing..." : "Scan Medical Documents"}
+								</Button>
+							)}
+						</div>
+						<p className="text-sm text-muted-foreground text-center">- or -</p>
+						<Button
+							className='w-full mt-2 hover:bg-white'
+							onClick={() => setIsUploadOpen(true)}
+							variant="ghost">
+							<Upload className="mr-2 h-4 w-4" />
+							Upload your first document
+						</Button>
+					</CardContent>
+				</Card>
+			</div>
+
 
 			{message && (
 				<StatusMessage type={message.type} text={message.text} />
 			)}
 
-			<div className="space-y-4">
-				{!isConnected ? (
-					<ConnectGmail />
-				) : (
-					<Button
-						onClick={handleScan}
-						disabled={isScanning}
-						className="w-full sm:w-auto"
-					>
-						<Search className="mr-2 h-4 w-4" />
-						{isScanning ? "Processing..." : "Scan Medical Documents"}
-					</Button>
-				)}
-			</div>
+
 
 			<UploadDrawer
 				isOpen={isUploadOpen}
