@@ -63,16 +63,18 @@ export async function createDocumentAnalyzer() {
             }
         ],
         instructions: `You are a medical document analyzer. Your task is to analyze medical documents and extract structured information.
-			Always use the processHealthRecord function to return your analysis.
-			Be precise and thorough in your analysis while maintaining a clear and concise summary.
-			Pay special attention to document type, dates, provider information, and key medical findings.
+            IMPORTANT: You must ALWAYS return your analysis using the processHealthRecord function. DO NOT provide analysis in text form.
 
-			Guidelines for analysis:
-			1. Determine the correct record_type based on document content
-			2. Create a descriptive record_name that reflects the main purpose
-			3. Write a concise but informative summary
-			4. Extract doctor's name when available
-			5. Find and format dates in YYYY-MM-DD format`
+            Follow these steps exactly:
+            1. Read and analyze the document using file_search
+            2. Structure your findings using ONLY the processHealthRecord function with these fields:
+               - record_type: Choose from the allowed types
+               - record_name: Create a clear, descriptive name
+               - summary: Provide a concise summary of key information
+               - doctor_name: Include if present (or null if not found)
+               - date: Use YYYY-MM-DD format (or null if not found)
+
+            DO NOT write any text responses. ONLY use the processHealthRecord function to return your analysis.`
     });
 
     console.log('Created assistant with ID:', assistant.id);
@@ -300,52 +302,58 @@ export async function analyzeDocument(fileId: string, filename: string): Promise
     // Step 2: Add the message with file attachment
     await openai.beta.threads.messages.create(thread.id, {
         role: "user",
-        content: `Please read and analyze this medical document named "${filename}". After you've analyzed it, I'll ask you to structure the information.`,
+        content: `Analyze this medical document and return the results using ONLY the processHealthRecord function. Do not provide any text response.`,
         attachments: [{
             file_id: fileId,
             tools: [{ type: 'file_search' }]
         }]
     } as any);
 
-    // Step 3: Run the assistant to analyze the document
-    let run = await openai.beta.threads.runs.create(thread.id, {
+    // Step 3: Run the assistant
+    const run = await openai.beta.threads.runs.create(thread.id, {
         assistant_id: DOCUMENT_ANALYZER_ASSISTANT_ID,
-        tools: [{ type: "file_search" }]
-    });
-
-    // Step 4: Wait for the analysis to complete
-    while (true) {
-        const runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-        console.log('[OpenAI] Analysis run status:', runStatus.status);
-
-        if (runStatus.status === 'completed') {
-            break;
-        }
-        if (runStatus.status === 'failed') {
-            console.log('[OpenAI] Run failed:', runStatus.last_error);
-            throw new Error(`Assistant run failed: ${runStatus.last_error?.message || 'Unknown error'}`);
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-
-    // Step 5: Ask the assistant to structure the analysis
-    await openai.beta.threads.messages.create(thread.id, {
-        role: "user",
-        content: "Great! Now please structure your analysis using the processHealthRecord function. Include the record type, name, summary, doctor's name if present, and any dates you found."
-    });
-
-    // Step 6: Run the assistant to structure the analysis
-    run = await openai.beta.threads.runs.create(thread.id, {
-        assistant_id: DOCUMENT_ANALYZER_ASSISTANT_ID,
-        tools: [{ type: "function", function: { name: "processHealthRecord" } }]
+        instructions: "Analyze the document and call processHealthRecord with the results. You MUST use the processHealthRecord function to return your analysis.",
+        tools: [{
+            type: "function",
+            function: {
+                name: "processHealthRecord",
+                parameters: {
+                    type: "object",
+                    properties: {
+                        record_type: {
+                            type: "string",
+                            enum: ["lab_report", "prescription", "imaging", "clinical_notes", "other"],
+                            description: "The type of medical record"
+                        },
+                        record_name: {
+                            type: "string",
+                            description: "A descriptive name for the record"
+                        },
+                        summary: {
+                            type: "string",
+                            description: "A brief summary of the document's key information"
+                        },
+                        doctor_name: {
+                            type: "string",
+                            description: "The name of the healthcare provider, if present"
+                        },
+                        date: {
+                            type: "string",
+                            description: "The document date in ISO format (YYYY-MM-DD), if present"
+                        }
+                    },
+                    required: ["record_type", "record_name", "summary"]
+                }
+            }
+        }]
     });
 
     try {
-        // Step 7: Poll for completion and get results
+        // Step 4: Poll for completion and get results
         let result: HealthRecord;
         while (true) {
             const runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-            console.log('[OpenAI] Structuring run status:', runStatus.status);
+            console.log('[OpenAI] Run status:', runStatus.status);
 
             if (runStatus.status === 'completed') {
                 console.log('[OpenAI] Run completed, fetching messages');
@@ -369,6 +377,28 @@ export async function analyzeDocument(fileId: string, filename: string): Promise
                 }
                 console.log('[OpenAI] No valid function call found');
                 throw new Error('No valid function call found in assistant response');
+            }
+
+            if (runStatus.status === 'requires_action') {
+                console.log('[OpenAI] Run requires action, submitting tool outputs');
+
+                // Get the required action details
+                const requiredAction = runStatus.required_action;
+                if (requiredAction?.type === 'submit_tool_outputs') {
+                    // Submit empty tool outputs to let the assistant proceed
+                    await openai.beta.threads.runs.submitToolOutputs(
+                        thread.id,
+                        run.id,
+                        {
+                            tool_outputs: requiredAction.submit_tool_outputs.tool_calls.map(toolCall => ({
+                                tool_call_id: toolCall.id,
+                                output: JSON.stringify({ success: true })
+                            }))
+                        }
+                    );
+                    console.log('[OpenAI] Submitted tool outputs');
+                    continue;
+                }
             }
 
             if (runStatus.status === 'failed') {
