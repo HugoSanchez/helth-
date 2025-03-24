@@ -27,10 +27,18 @@ export const config = {
 	},
 }
 
+// Verify required environment variables
+if (!process.env.OPENAI_API_KEY) {
+	throw new Error('Missing OPENAI_API_KEY environment variable')
+}
+
+if (!process.env.OPENAI_ASSISTANT_ID) {
+	throw new Error('Missing OPENAI_ASSISTANT_ID environment variable')
+}
+
 /**
  * Initialize OpenAI client with API key from environment variables.
  * This client will be used for both file uploads and document analysis.
- * The API key must be set in the environment variables as OPENAI_API_KEY.
  */
 const openai = new OpenAI({
 	apiKey: process.env.OPENAI_API_KEY,
@@ -39,6 +47,7 @@ const openai = new OpenAI({
 export async function POST(req: Request) {
 	console.log('[Process] Starting document processing')
 	const tempFilePath = path.join(os.tmpdir(), `upload-${Date.now()}.pdf`)
+	let openAiFileId: string | undefined
 
 	try {
 		// Authenticate user
@@ -51,6 +60,10 @@ export async function POST(req: Request) {
 
 		if (!file) {
 			return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+		}
+
+		if (!file.type.includes('pdf')) {
+			return NextResponse.json({ error: 'Only PDF files are supported' }, { status: 400 })
 		}
 
 		// Create storage path
@@ -83,17 +96,37 @@ export async function POST(req: Request) {
 			purpose: 'assistants'
 		})
 
-		// Clean up temp file
+		openAiFileId = openAiFile.id
+		console.log('[OpenAI] File uploaded:', openAiFileId)
+
+		// Clean up temp file as we don't need it anymore
 		fs.unlinkSync(tempFilePath)
 
-		console.log('[OpenAI] File uploaded:', openAiFile.id)
-
 		// Analyze the document
-		const analysis = await analyzeDocument(openAiFile.id, file.name)
+		console.log('[OpenAI] Starting document analysis...')
+		const analysis = await analyzeDocument(openAiFileId, file.name)
 		console.log('[OpenAI] Analysis complete:', {
 			type: analysis.record_type,
-			name: analysis.record_name
+			name: analysis.record_name,
+			summary: analysis.summary.substring(0, 100) + '...' // Log first 100 chars of summary
 		})
+
+		// Store the analysis in Supabase
+		const { error: dbError } = await supabaseAdmin
+			.from('documents')
+			.insert({
+				user_id: userId,
+				storage_path: storagePath,
+				record_type: analysis.record_type,
+				record_name: analysis.record_name,
+				summary: analysis.summary,
+				doctor_name: analysis.doctor_name,
+				date: analysis.date
+			})
+
+		if (dbError) {
+			throw new Error(`Database insert failed: ${dbError.message}`)
+		}
 
 		return NextResponse.json({
 			success: true,
@@ -112,5 +145,15 @@ export async function POST(req: Request) {
 			{ error: error instanceof Error ? error.message : 'Internal server error' },
 			{ status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 500 }
 		)
+	} finally {
+		// Clean up OpenAI file if it was created
+		if (openAiFileId) {
+			try {
+				await openai.files.del(openAiFileId)
+				console.log('[OpenAI] Cleaned up file:', openAiFileId)
+			} catch (error) {
+				console.error('[OpenAI] Failed to clean up file:', openAiFileId, error)
+			}
+		}
 	}
 }
