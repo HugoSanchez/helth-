@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { authenticateUser } from '@/lib/server/auth'
-import { analyzeDocument } from '@/lib/anthropic'
-import { storeDocument } from '@/lib/db'
+import { analyzeDocument } from '@/lib/server/anthropic'
+import { storeDocument } from '@/lib/server/db'
 
 // Route Segment Config
 export const runtime = 'nodejs'

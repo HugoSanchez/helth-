@@ -1,9 +1,9 @@
 import { google } from 'googleapis';
 import { authenticateUser, getGmailAccount } from '@/lib/server/auth';
-import { initializeGmailClient, fetchAndProcessEmails, getAttachmentContent } from '@/lib/gmail';
-import { screenEmailSubjects } from '@/lib/openai';
+import { initializeGmailClient, fetchAndProcessEmails, getAttachmentContent } from '@/lib/server/gmail';
+import { screenEmailSubjects } from '@/lib/server/openai';
 import { GmailMessage, GmailScanResponse, EmailClassification } from '@/types/gmail';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { supabaseAdmin } from '@/lib/server/supabase-admin';
 
 /**
  * Format the scan results for frontend consumption
