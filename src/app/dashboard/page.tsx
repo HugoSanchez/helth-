@@ -10,7 +10,7 @@ import { EmailClassification } from '@/types/gmail'
 import { UploadDrawer } from '@/components/UploadDrawer'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useSession } from '@/hooks/useSession'
-import { hasGmailConnection } from '@/lib/auth'
+import { hasGmailConnection } from '@/lib/client/auth'
 
 export default function DashboardPage() {
 	const searchParams = useSearchParams()

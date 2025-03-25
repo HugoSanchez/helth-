@@ -25,8 +25,7 @@ export async function authenticateRequest() {
  * Wraps the route handler with authentication check
  */
 export function withAuth(handler: (userId: string, req: Request) => Promise<Response>) {
-    console.log('withAuth')
-	return async (req: Request) => {
+    return async (req: Request) => {
         try {
             const userId = await authenticateRequest()
             return handler(userId, req)
@@ -41,46 +40,8 @@ export function withAuth(handler: (userId: string, req: Request) => Promise<Resp
 }
 
 /**
- * Frontend utility to make authenticated fetch requests
- * Automatically handles auth headers and error responses
- */
-export async function fetchWithAuth(
-    url: string,
-    options: RequestInit = {}
-) {
-    try {
-        const response = await fetch(url, {
-            ...options,
-            headers: {
-                ...options.headers,
-            }
-        })
-
-        if (response.status === 401) {
-            throw new Error('Unauthorized')
-        }
-
-        if (!response.ok) {
-            throw new Error(`Request failed: ${response.statusText}`)
-        }
-
-        return response
-    } catch (error) {
-        console.error('Request error:', error)
-        throw error
-    }
-}
-
-/**
  * Authenticate user using Supabase and retrieve their user ID
  * Verifies the Bearer token and ensures the user exists
- *
- * @param authHeader - Authorization header from the request
- * @throws Error if unauthorized or token is invalid
- * @returns User ID from Supabase
- *
- * @example
- * const userId = await authenticateUser(request.headers.get('Authorization'));
  */
 export async function authenticateUser(authHeader: string | null): Promise<Database['public']['Tables']['gmail_accounts']['Row']['user_id']> {
     if (!authHeader?.startsWith('Bearer ')) {
@@ -101,13 +62,6 @@ export async function authenticateUser(authHeader: string | null): Promise<Datab
 /**
  * Retrieve Gmail account details for a specific user
  * Fetches the account from Supabase database
- *
- * @param userId - Supabase user ID
- * @throws Error if Gmail account is not found
- * @returns Gmail account details including access and refresh tokens
- *
- * @example
- * const gmailAccount = await getGmailAccount(userId);
  */
 export async function getGmailAccount(userId: string) {
     const { data: gmailAccount, error: gmailError } = await supabaseAdmin
@@ -125,12 +79,6 @@ export async function getGmailAccount(userId: string) {
 
 /**
  * Check if a user has a Gmail account connected
- *
- * @param userId - Supabase user ID
- * @returns Boolean indicating if user has a Gmail account connected
- *
- * @example
- * const isConnected = await hasGmailConnection(userId);
  */
 export async function hasGmailConnection(userId: string): Promise<boolean> {
     const { data, error } = await supabaseAdmin

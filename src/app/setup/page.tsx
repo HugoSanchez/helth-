@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { supabase } from '@/lib/supabase'
+import { saveUserPreferences } from '@/lib/client/db'
 
 export default function SetupPage() {
     const router = useRouter()
@@ -27,21 +28,12 @@ export default function SetupPage() {
                 throw new Error('No session found')
             }
 
-            // Insert user preferences
-            const { error: insertError } = await supabase
-                .from('user_preferences')
-                .insert([
-                    {
-                        user_id: session.user.id,
-                        display_name: formData.displayName,
-                        language: formData.language,
-                        onboarding_completed: true
-                    }
-                ])
+            await saveUserPreferences({
+                user_id: session.user.id,
+                display_name: formData.displayName,
+                language: formData.language,
+            })
 
-            if (insertError) throw insertError
-
-            // Redirect to dashboard
             router.push('/dashboard')
 
         } catch (err) {

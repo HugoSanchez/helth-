@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { authenticateUser } from '@/lib/auth'
+import { authenticateUser } from '@/lib/server/auth'
 import { analyzeDocument } from '@/lib/anthropic'
 import { storeDocument } from '@/lib/db'
 

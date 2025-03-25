@@ -52,6 +52,7 @@ export async function saveUserPreferences(preferences: Omit<UserPreferences, 'on
     if (error) {
         throw new Error(`Failed to save preferences: ${error.message}`);
     }
+	return error
 }
 
 /**
