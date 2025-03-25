@@ -19,10 +19,10 @@ export default function Home() {
   return (
 	<div className={"p-4 md:p-16"}>
 		<div className={'w-full h-full mt-24 '}>
-			<h1 className={'text-6xl md:text-7xl font-bold'}>Take control of</h1>
-			<h1 className={'text-6xl md:text-7xl font-bold'}>your health records<span className={'text-teal-200'}>.</span></h1>
+			<h1 className={'text-6xl md:text-7xl font-bold font-serif'}>Take control of</h1>
+			<h1 className={'text-6xl md:text-7xl font-bold font-serif'}>your health records<span className={'text-teal-200'}>.</span></h1>
 			<p className={'text-xl md:text-2xl mt-12 leading-relaxed font-light md:max-w-3xl'}>
-				<span className={'bg-teal-200'}>Automatically organize all your health records.</span>
+				<span className={'bg-teal-200 font-serif mr-2'}>Automatically organize all your health records.</span>
 				Make it easy for professionals to access your data, and interact with an AI that has
 				your full medical history <span className={'bg-orange-200'}>while always being in control.</span>
 			</p>
@@ -30,8 +30,8 @@ export default function Home() {
 
 				<button
 					onClick={handleClick}
-					className={'bg-black text-white px-6 py-3 rounded-md shadow-md hover:opacity-80'}>
-						Get started today !
+					className={'bg-black text-white font-serif px-6 py-3 rounded-md shadow-md hover:opacity-80'}>
+						Get started today!
 				</button>
 			</div>
 		</div>
