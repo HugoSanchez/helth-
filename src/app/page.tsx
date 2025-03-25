@@ -5,20 +5,12 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 export default function Home() {
-  const router = useRouter()
 
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        router.replace('/dashboard')
-      } else {
-        router.replace('/login')
-      }
-    }
-
-    checkSession()
-  }, [router])
-
-  return null
+  return (
+	<div className={"p-4 md:p-16"}>
+		<div className={'w-full h-full border-2 border-red-500'}>
+			<h1>Hello</h1>
+		</div>
+	</div>
+  )
 }

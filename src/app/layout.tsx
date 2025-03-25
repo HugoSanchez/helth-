@@ -19,7 +19,10 @@ export default function RootLayout({
 }) {
 	return (
 		<html lang="en" suppressHydrationWarning>
-			<body className={`${robotoFlex.variable} ${robotoSerif.variable} ${workSans.variable}`}>
+			<body className={
+				`${robotoFlex.variable}
+				${robotoSerif.variable}
+				${workSans.variable}`}>
 				<SupabaseProvider>
 					{children}
 				</SupabaseProvider>

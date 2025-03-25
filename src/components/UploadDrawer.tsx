@@ -37,7 +37,7 @@ export function UploadDrawer({ isOpen, onClose }: UploadDrawerProps) {
             const formData = new FormData()
             formData.append('file', file)
 
-            const response = await fetch('/api/documents/analyze-with-claude', {
+            const response = await fetch('/api/documents/analyze', {
                 method: 'POST',
                 body: formData,
                 headers: {
