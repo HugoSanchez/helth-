@@ -5,13 +5,15 @@ import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { supabase } from '@/lib/supabase'
-import { saveUserPreferences, getUserPreferences } from '@/lib/client/db'
 import { useTranslation } from '@/hooks/useTranslation'
 import { Language } from '@/lib/translations'
+import { useSession } from '@/hooks/useSession'
+import { usePreferences } from '@/hooks/usePreferences'
 
 export default function SetupPage() {
     const router = useRouter()
+    const { session, loading: sessionLoading } = useSession({ redirectTo: '/login' })
+    const { preferences, loading: prefsLoading, updatePreferences } = usePreferences()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [formData, setFormData] = useState({
@@ -23,26 +25,14 @@ export default function SetupPage() {
 
     // Load existing preferences
     useEffect(() => {
-        async function loadPreferences() {
-            try {
-                const { data: { session } } = await supabase.auth.getSession()
-                if (!session) return
-
-                const prefs = await getUserPreferences(session.user.id)
-                if (prefs) {
-                    setFormData({
-                        displayName: prefs.display_name,
-                        language: prefs.language
-                    })
-                    setLanguage(prefs.language)
-                }
-            } catch (err) {
-                console.error('Error loading preferences:', err)
-            }
+        if (preferences) {
+            setFormData({
+                displayName: preferences.displayName,
+                language: preferences.language
+            })
+            setLanguage(preferences.language)
         }
-
-        loadPreferences()
-    }, [setLanguage])
+    }, [preferences, setLanguage])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -50,14 +40,12 @@ export default function SetupPage() {
         setError(null)
 
         try {
-            const { data: { session } } = await supabase.auth.getSession()
             if (!session) {
                 throw new Error('No session found')
             }
 
-            await saveUserPreferences({
-                user_id: session.user.id,
-                display_name: formData.displayName,
+            await updatePreferences({
+                displayName: formData.displayName,
                 language: formData.language,
             })
 
@@ -71,12 +59,21 @@ export default function SetupPage() {
         }
     }
 
+    // Show loading state while checking session or loading preferences
+    if (sessionLoading || prefsLoading) {
+        return (
+            <main className="flex justify-center items-center min-h-screen">
+                <p>{t('common.loading')}</p>
+            </main>
+        )
+    }
+
     return (
         <main className="flex justify-center min-h-screen py-20">
             <Card className="w-[600px]">
                 <CardHeader>
-                    <CardTitle className="text-5xl py-2 font-bold">{t('setup.welcome')}</CardTitle>
-                    <CardDescription className="text-xl font-light">
+                    <CardTitle className="text-4xl py-2 font-bold">{t('setup.welcome')}</CardTitle>
+                    <CardDescription className="text-lg font-light">
                         {t('setup.description')}
                     </CardDescription>
                 </CardHeader>

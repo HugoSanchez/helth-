@@ -11,14 +11,28 @@ import { UploadDrawer } from '@/components/UploadDrawer'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useSession } from '@/hooks/useSession'
 import { hasGmailConnection } from '@/lib/client/auth'
+import { usePreferences } from '@/hooks/usePreferences'
+import { useTranslation } from '@/hooks/useTranslation'
+import { Language } from '@/lib/translations'
 
 export default function DashboardPage() {
 	const searchParams = useSearchParams()
-	const { session, loading } = useSession({ redirectTo: '/login', requireOnboarding: true })
+	const { session, loading: sessionLoading } = useSession({ redirectTo: '/login', requireOnboarding: true })
+	const { preferences, loading: prefsLoading } = usePreferences()
+	const [currentLanguage, setCurrentLanguage] = useState<Language>('en')
+	const { t } = useTranslation(currentLanguage)
 	const [isConnected, setIsConnected] = useState(false)
 	const [isScanning, setIsScanning] = useState(false)
 	const [isUploadOpen, setIsUploadOpen] = useState(false)
 	const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info', text: string } | null>(null)
+
+	// Update language when preferences change
+	useEffect(() => {
+		if (preferences?.language) {
+			console.log('Setting language to:', preferences.language)
+			setCurrentLanguage(preferences.language)
+		}
+	}, [preferences])
 
 	// Check connection status on mount and when URL params change
 	useEffect(() => {
@@ -107,11 +121,11 @@ export default function DashboardPage() {
 		}
 	}
 
-	// Show loading state while checking session
-	if (loading) {
+	// Show loading state while checking session or loading preferences
+	if (sessionLoading || prefsLoading) {
 		return (
 			<main className="container flex items-center justify-center min-h-screen">
-				<p>Loading...</p>
+				<p>{t('common.loading')}</p>
 			</main>
 		)
 	}
@@ -124,8 +138,12 @@ export default function DashboardPage() {
 			<div className="flex items-center justify-center">
 				<Card className="w-[600px]">
 					<CardHeader>
-						<CardTitle className='text-center text-2xl font-bold'>Welcome to Helth.!</CardTitle>
-						<CardDescription className='text-center'>This will be your Dashboard. Start by scanning your emails for medical documents or you can upload your first document. </CardDescription>
+						<CardTitle className='text-center text-2xl font-bold'>
+							{t('dashboard.welcome').replace('{name}', preferences?.displayName || '')}
+						</CardTitle>
+						<CardDescription className='text-center'>
+							{t('dashboard.description')}
+						</CardDescription>
 					</CardHeader>
 					<CardContent>
 						<div className="mt-4 mb-4">
@@ -138,17 +156,17 @@ export default function DashboardPage() {
 									className="w-full h-12"
 								>
 									<Search className="mr-2 h-4 w-4" />
-									{isScanning ? "Processing..." : "Scan Medical Documents"}
+									{isScanning ? t('dashboard.processing') : t('dashboard.scanButton')}
 								</Button>
 							)}
 						</div>
-						<p className="text-sm text-muted-foreground text-center">- or -</p>
+						<p className="text-sm text-muted-foreground text-center">{t('dashboard.or')}</p>
 						<Button
 							className='w-full mt-2 hover:bg-white'
 							onClick={() => setIsUploadOpen(true)}
 							variant="ghost">
 							<Upload className="mr-2 h-4 w-4" />
-							Upload your first document
+							{t('dashboard.uploadButton')}
 						</Button>
 					</CardContent>
 				</Card>

@@ -1,8 +1,14 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { translations, Language } from '@/lib/translations';
 
 export function useTranslation(initialLanguage: Language = 'en') {
     const [language, setLanguage] = useState<Language>(initialLanguage);
+
+    // Update language when initialLanguage changes
+    useEffect(() => {
+        console.log('Language changed to:', initialLanguage)
+        setLanguage(initialLanguage)
+    }, [initialLanguage])
 
     const t = useCallback((key: string) => {
         const keys = key.split('.');
