@@ -19,19 +19,17 @@ interface UploadDrawerProps {
 
 export function UploadDrawer({ isOpen, onClose }: UploadDrawerProps) {
     const [isUploading, setIsUploading] = useState(false)
+    const [analysisResult, setAnalysisResult] = useState<any>(null)
+    const [error, setError] = useState<string | null>(null)
 
     const handleFileSelect = async (file: File) => {
         try {
             setIsUploading(true)
+            setError(null)
+            setAnalysisResult(null)
             console.log("Starting upload for file:", file.name)
 
             const { data: { session } } = await supabase.auth.getSession()
-            console.log("Session details:", {
-                hasSession: !!session,
-                accessToken: session?.access_token?.slice(0, 20) + '...',  // Log part of token for debugging
-                userId: session?.user?.id
-            })
-
             if (!session) {
                 throw new Error('No session found')
             }
@@ -39,11 +37,7 @@ export function UploadDrawer({ isOpen, onClose }: UploadDrawerProps) {
             const formData = new FormData()
             formData.append('file', file)
 
-            console.log("Making request with headers:", {
-                Authorization: `Bearer ${session.access_token.slice(0, 20)}...`
-            })
-
-            const response = await fetch('/api/documents/process', {
+            const response = await fetch('/api/documents/analyze-with-claude', {
                 method: 'POST',
                 body: formData,
                 headers: {
@@ -51,23 +45,17 @@ export function UploadDrawer({ isOpen, onClose }: UploadDrawerProps) {
                 }
             })
 
-            console.log("Response status:", response.status)
-
             if (!response.ok) {
-                const errorText = await response.text()
-                console.error("Response error details:", {
-                    status: response.status,
-                    statusText: response.statusText,
-                    body: errorText
-                })
                 throw new Error(`Upload failed: ${response.statusText}`)
             }
 
             const data = await response.json()
-            console.log("Upload successful:", data)
+            console.log("Analysis complete:", data)
+            setAnalysisResult(data.analysis)
 
         } catch (error) {
             console.error("Upload error:", error)
+            setError(error instanceof Error ? error.message : 'An error occurred')
         } finally {
             setIsUploading(false)
         }
@@ -94,11 +82,30 @@ export function UploadDrawer({ isOpen, onClose }: UploadDrawerProps) {
                         Upload a medical document to analyze and store in your records.
                     </DrawerDescription>
                 </DrawerHeader>
-                <div className="flex-1 overflow-y-auto mt-4">
+                <div className="p-4 space-y-4">
                     <FileUpload
                         onFileSelect={handleFileSelect}
                         disabled={isUploading}
                     />
+
+                    {error && (
+                        <div className="mt-4 p-4 bg-red-50 text-red-600 rounded-md text-sm">
+                            {error}
+                        </div>
+                    )}
+
+                    {analysisResult && (
+                        <div className="mt-4 p-4 bg-green-50 rounded-md">
+                            <h3 className="font-medium mb-2">Analysis Results:</h3>
+                            <div className="text-sm space-y-2">
+                                <p><strong>Type:</strong> {analysisResult.record_type}</p>
+                                <p><strong>Name:</strong> {analysisResult.record_name}</p>
+                                <p><strong>Doctor:</strong> {analysisResult.doctor_name || 'Not found'}</p>
+                                <p><strong>Date:</strong> {analysisResult.date || 'Not found'}</p>
+                                <p><strong>Summary:</strong> {analysisResult.summary}</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </DrawerContent>
         </Drawer>
