@@ -21,7 +21,7 @@ export function Header() {
 	return (
 		<header className="">
 			<div className="px-4 sm:px-6 lg:px-16 h-14 flex items-center justify-between">
-				<h1 className="text-2xl font-bold font-serif">helth.</h1>
+				<h1 className="text-xl font-bold font-serif tracking-wide">helth.</h1>
 				<DropdownMenu>
 				<DropdownMenuTrigger>
 					<Avatar>

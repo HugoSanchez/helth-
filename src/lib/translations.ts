@@ -22,7 +22,17 @@ export const translations = {
             connect: {
                 title: "Connect your Gmail",
                 description: "Connect your Gmail account to let helth automatically scan your inbox for medical documents. This is an optional step.",
-                skipDescription: "You can always connect your Gmail account later from your dashboard."
+                skipDescription: "You can always connect your Gmail account later from your dashboard.",
+                whyConnect: "Why connect Gmail?",
+                benefits: {
+                    title: "Benefits of connecting your Gmail:",
+                    items: [
+                        "Automatically find medical documents in your inbox",
+                        "Save time by avoiding manual uploads",
+                        "Never miss important medical information",
+                        "Secure and private - we only access medical-related emails"
+                    ]
+                }
             }
         },
         dashboard: {
@@ -62,7 +72,16 @@ export const translations = {
             connect: {
                 title: "Conecta tu Gmail",
                 description: "Conecta tu cuenta de Gmail si quieres que helth escanee tu correo para extraer tus documentos médicos por ti. Este es un paso opcional.",
-                skipDescription: "Siempre puedes conectar tu cuenta de Gmail más tarde desde tu panel de control."
+                skipDescription: "Siempre puedes conectar tu cuenta de Gmail más tarde desde tu panel de control.",
+                whyConnect: "¿Por qué conectar Gmail?",
+                benefits: {
+                    title: "Beneficios de conectar tu Gmail y cómo funciona:",
+                    items: [
+						"Solo accedemos a tus correos una vez",
+						"No guardamos ni tus correos ni tus credenciales",
+						"Encuentramos automáticamente documentos médicos en tu bandeja de entrada sin que tengas que hacer nada.",
+                    ]
+                }
             }
         },
         dashboard: {
