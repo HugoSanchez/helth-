@@ -92,4 +92,7 @@
 		@apply bg-background;
 		@apply font-sans;
 	}
+	h1 {
+		@apply text-2xl font-serif font-bold;
+	}
 }

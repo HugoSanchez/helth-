@@ -36,10 +36,11 @@ export const translations = {
             }
         },
         dashboard: {
-            welcome: "Hi, {name}!",
+            greetinf: "Hi {name},",
+			thisIsYourDashboard: "this is your dashboard",
             description: "This will be your Dashboard. Start by scanning your emails for medical documents or you can upload your first document.",
             scanButton: "Scan Medical Documents",
-            uploadButton: "Upload your first document",
+            uploadButton: "Upload document",
             processing: "Processing...",
             or: "- or -",
             connectGmail: "Connect Gmail to get started"
@@ -85,10 +86,11 @@ export const translations = {
             }
         },
         dashboard: {
-            welcome: "¡Hola, {name}!",
+            greeting: "Hola {name},",
+			thisIsYourDashboard: "este es tu Dashboard.",
             description: "Este será tu Panel de Control. Comienza escaneando tus correos electrónicos en busca de documentos médicos o puedes subir tu primer documento.",
             scanButton: "Conectar Gmail y Escanear",
-            uploadButton: "Sube tu primer documento",
+            uploadButton: "Sube un documento",
             processing: "Procesando...",
             or: "- o -",
             connectGmail: "Conecta Gmail para comenzar"
