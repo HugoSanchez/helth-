@@ -1,15 +1,29 @@
 export const translations = {
     en: {
         common: {
-            loading: "Loading..."
+            loading: "Loading...",
+            next: "Next",
+            back: "Back",
+            skip: "Skip",
+            continue: "Continue"
         },
         setup: {
             welcome: "Welcome to helth.",
-            description: "Before continuing, let's get to know you better. Please provide your name and preferred language.",
+            description: "Before continuing, let's get you set up. Please provide your name and preferred language.",
             nameLabel: "What's your name?",
             languageLabel: "Choose your language",
             continue: "Continue",
-            settingUp: "Setting up..."
+            settingUp: "Setting up...",
+            steps: {
+                preferences: "Preferences",
+                connect: "Connect Gmail",
+                ready: "Ready!"
+            },
+            connect: {
+                title: "Connect your Gmail",
+                description: "Connect your Gmail account to let helth automatically scan your inbox for medical documents. This is an optional step.",
+                skipDescription: "You can always connect your Gmail account later from your dashboard."
+            }
         },
         dashboard: {
             welcome: "Hi, {name}!",
@@ -27,20 +41,34 @@ export const translations = {
     },
     es: {
         common: {
-            loading: "Cargando..."
+            loading: "Loading...",
+            next: "Siguiente",
+            back: "Atrás",
+            skip: "Omitir este paso",
+            continue: "Continuar"
         },
         setup: {
             welcome: "Bienvenido a helth.",
-            description: "Antes de continuar, nos gustaría conocerte mejor. Por favor, proporciona tu nombre e idioma preferido.",
+            description: "Antes de continuar, vamos a configurar tu cuenta. Por favor, proporciona tu nombre e idioma preferido.",
             nameLabel: "¿Cómo te llamas?",
             languageLabel: "Elige tu idioma",
             continue: "Continuar",
-            settingUp: "Configurando..."
+            settingUp: "Configurando...",
+            steps: {
+                preferences: "Preferencias",
+                connect: "Conecta Gmail",
+                ready: "¡Listo!"
+            },
+            connect: {
+                title: "Conecta tu Gmail",
+                description: "Conecta tu cuenta de Gmail si quieres que helth escanee tu correo para extraer tus documentos médicos por ti. Este es un paso opcional.",
+                skipDescription: "Siempre puedes conectar tu cuenta de Gmail más tarde desde tu panel de control."
+            }
         },
         dashboard: {
             welcome: "¡Hola, {name}!",
             description: "Este será tu Panel de Control. Comienza escaneando tus correos electrónicos en busca de documentos médicos o puedes subir tu primer documento.",
-            scanButton: "Escanear Documentos Médicos",
+            scanButton: "Conectar Gmail y Escanear",
             uploadButton: "Sube tu primer documento",
             processing: "Procesando...",
             or: "- o -",
