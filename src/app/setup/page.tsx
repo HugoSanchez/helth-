@@ -1,12 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { supabase } from '@/lib/supabase'
-import { saveUserPreferences } from '@/lib/client/db'
+import { saveUserPreferences, getUserPreferences } from '@/lib/client/db'
+import { useTranslation } from '@/hooks/useTranslation'
+import { Language } from '@/lib/translations'
 
 export default function SetupPage() {
     const router = useRouter()
@@ -14,8 +16,33 @@ export default function SetupPage() {
     const [error, setError] = useState<string | null>(null)
     const [formData, setFormData] = useState({
         displayName: '',
-        language: 'en' as 'en' | 'es'
+        language: 'en' as Language
     })
+
+    const { t, setLanguage } = useTranslation(formData.language)
+
+    // Load existing preferences
+    useEffect(() => {
+        async function loadPreferences() {
+            try {
+                const { data: { session } } = await supabase.auth.getSession()
+                if (!session) return
+
+                const prefs = await getUserPreferences(session.user.id)
+                if (prefs) {
+                    setFormData({
+                        displayName: prefs.display_name,
+                        language: prefs.language
+                    })
+                    setLanguage(prefs.language)
+                }
+            } catch (err) {
+                console.error('Error loading preferences:', err)
+            }
+        }
+
+        loadPreferences()
+    }, [setLanguage])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -45,19 +72,19 @@ export default function SetupPage() {
     }
 
     return (
-        <main className="flex justify-center min-h-screen py-24">
+        <main className="flex justify-center min-h-screen py-20">
             <Card className="w-[600px]">
                 <CardHeader>
-                    <CardTitle className="text-5xl py-2 font-bold">Welcome to helth</CardTitle>
+                    <CardTitle className="text-5xl py-2 font-bold">{t('setup.welcome')}</CardTitle>
                     <CardDescription className="text-xl font-light">
-                        Let's get to know you better. Please provide your name and preferred language.
+                        {t('setup.description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit}>
                         <div className="space-y-2">
                             <label htmlFor="displayName" className="text-md">
-                                What's your name?
+                                {t('setup.nameLabel')}
                             </label>
                             <input
                                 id="displayName"
@@ -74,22 +101,25 @@ export default function SetupPage() {
 
                         <div className="mt-4 space-y-2">
                             <label className="text-md">
-                                Choose your language
+                                {t('setup.languageLabel')}
                             </label>
                             <Select
                                 value={formData.language}
-                                onValueChange={(value) => setFormData(prev => ({
-                                    ...prev,
-                                    language: value as 'en' | 'es'
-                                }))}
+                                onValueChange={(value: Language) => {
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        language: value
+                                    }))
+                                    setLanguage(value)
+                                }}
                                 required
                             >
                                 <SelectTrigger className="w-full h-12 bg-white">
-                                    <SelectValue placeholder="Select a language" />
+                                    <SelectValue placeholder={t('setup.languageLabel')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="en">English</SelectItem>
-                                    <SelectItem value="es">Español</SelectItem>
+                                    <SelectItem value="en">{t('languages.english')}</SelectItem>
+                                    <SelectItem value="es">{t('languages.spanish')}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -105,7 +135,7 @@ export default function SetupPage() {
                             className="w-full h-12 mt-6 text-lg font-serif font-light"
                             disabled={isLoading}
                         >
-                            {isLoading ? 'Setting up...' : 'Continue'}
+                            {isLoading ? t('setup.settingUp') : t('setup.continue')}
                         </Button>
                     </form>
                 </CardContent>

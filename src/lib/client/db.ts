@@ -13,10 +13,12 @@ interface UserPreferences {
 export async function saveUserPreferences(preferences: Omit<UserPreferences, 'onboarding_completed'>) {
     const { error } = await supabase
         .from('user_preferences')
-        .insert([{
+        .upsert([{
             ...preferences,
             onboarding_completed: true
-        }]);
+        }], {
+            onConflict: 'user_id'
+        });
 
     if (error) {
         throw new Error(`Failed to save preferences: ${error.message}`);

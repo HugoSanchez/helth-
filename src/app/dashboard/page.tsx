@@ -117,14 +117,14 @@ export default function DashboardPage() {
 	}
 
 	return (
-		<main className="container py-8 space-y-8">
+		<main className="py-8 space-y-8">
 			<div className="flex justify-between items-center pb-4">
 				<h1 className="text-2xl font-bold"></h1>
 			</div>
 			<div className="flex items-center justify-center">
 				<Card className="w-[600px]">
 					<CardHeader>
-						<CardTitle className='text-center'>Welcome to Helth.!</CardTitle>
+						<CardTitle className='text-center text-2xl font-bold'>Welcome to Helth.!</CardTitle>
 						<CardDescription className='text-center'>This will be your Dashboard. Start by scanning your emails for medical documents or you can upload your first document. </CardDescription>
 					</CardHeader>
 					<CardContent>
