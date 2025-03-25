@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { useSearchParams } from 'next/navigation'
 import { ConnectGmail } from '@/components/ConnectGmailButton'
 import { StatusMessage } from '@/components/StatusMessage'
 import { Button } from '@/components/ui/button'
@@ -10,10 +9,12 @@ import { Search, Upload } from 'lucide-react'
 import { EmailClassification } from '@/types/gmail'
 import { UploadDrawer } from '@/components/UploadDrawer'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useSession } from '@/hooks/useSession'
+import { hasGmailConnection } from '@/lib/auth'
 
 export default function DashboardPage() {
-	const router = useRouter()
 	const searchParams = useSearchParams()
+	const { session, loading } = useSession({ redirectTo: '/login', requireOnboarding: true })
 	const [isConnected, setIsConnected] = useState(false)
 	const [isScanning, setIsScanning] = useState(false)
 	const [isUploadOpen, setIsUploadOpen] = useState(false)
@@ -21,30 +22,23 @@ export default function DashboardPage() {
 
 	// Check connection status on mount and when URL params change
 	useEffect(() => {
-		checkConnection()
+		if (session) {
+			checkConnection()
+		}
 
 		// Check URL params for connection status
 		const success = searchParams.get('success')
 		if (success === 'gmail_connected') {
 			setMessage({ type: 'success', text: 'Gmail connected successfully!' })
 		}
-	}, [searchParams])
+	}, [searchParams, session])
 
 	async function checkConnection() {
 		try {
-			const { data: { session } } = await supabase.auth.getSession()
-			if (!session) {
-				router.replace('/login')
-				return
-			}
+			if (!session) return
 
-			const { data } = await supabase
-				.from('gmail_accounts')
-				.select('id')
-				.eq('user_id', session.user.id)
-				.maybeSingle()
-
-			setIsConnected(!!data)
+			const isConnected = await hasGmailConnection(session.user.id)
+			setIsConnected(isConnected)
 		} catch (err) {
 			console.error('Error checking connection:', err)
 			setMessage({ type: 'error', text: 'Failed to check connection status' })
@@ -56,7 +50,6 @@ export default function DashboardPage() {
 			setIsScanning(true)
 			setMessage({ type: 'info', text: 'Scanning emails for medical documents...' })
 
-			const { data: { session } } = await supabase.auth.getSession()
 			if (!session) {
 				throw new Error('No session found')
 			}
@@ -114,6 +107,15 @@ export default function DashboardPage() {
 		}
 	}
 
+	// Show loading state while checking session
+	if (loading) {
+		return (
+			<main className="container flex items-center justify-center min-h-screen">
+				<p>Loading...</p>
+			</main>
+		)
+	}
+
 	return (
 		<main className="container py-8 space-y-8">
 			<div className="flex justify-between items-center pb-4">
@@ -152,12 +154,9 @@ export default function DashboardPage() {
 				</Card>
 			</div>
 
-
 			{message && (
 				<StatusMessage type={message.type} text={message.text} />
 			)}
-
-
 
 			<UploadDrawer
 				isOpen={isUploadOpen}
