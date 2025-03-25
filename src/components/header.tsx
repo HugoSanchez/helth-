@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Menu } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,9 +24,7 @@ export function Header() {
 				<h1 className="text-xl font-bold font-serif">helth.</h1>
 				<DropdownMenu>
 				<DropdownMenuTrigger>
-					<Avatar>
-					<AvatarFallback>U</AvatarFallback>
-					</Avatar>
+					<Menu className="h-5 w-5 text-muted-foreground" />
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end">
 					<DropdownMenuItem
