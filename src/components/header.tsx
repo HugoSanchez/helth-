@@ -20,8 +20,8 @@ export function Header() {
 
 	return (
 		<header className="">
-			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-				<h1 className="text-2xl font-bold">Helth.</h1>
+			<div className="px-4 sm:px-6 lg:px-16 h-14 flex items-center justify-between">
+				<h1 className="text-2xl font-bold font-serif">helth</h1>
 				<DropdownMenu>
 				<DropdownMenuTrigger>
 					<Avatar>
