@@ -5,7 +5,7 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from "@/component
 import { useTranslation } from '@/hooks/useTranslation'
 import { usePreferences } from '@/hooks/usePreferences'
 import { ChevronRight } from 'lucide-react'
-import { cn } from '@/lib/client/utils'
+import { cn } from '@/lib/utils'
 
 function GoogleLogo() {
     return (
