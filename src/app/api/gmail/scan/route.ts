@@ -3,7 +3,7 @@ import { authenticateUser, getGmailAccount } from '@/lib/server/auth';
 import { initializeGmailClient, fetchAndProcessEmails, getAttachmentContent } from '@/lib/server/gmail';
 import { screenEmailSubjects } from '@/lib/server/openai';
 import { GmailMessage, GmailScanResponse, EmailClassification } from '@/types/gmail';
-import { supabaseAdmin } from '@/lib/server/supabase-admin';
+import { supabaseAdmin } from '@/lib/server/supabase';
 
 /**
  * Format the scan results for frontend consumption

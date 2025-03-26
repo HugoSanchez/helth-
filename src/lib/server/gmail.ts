@@ -1,6 +1,6 @@
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
-import { supabaseAdmin } from '@/lib/server/supabase-admin';
+import { supabaseAdmin } from '@/lib/server/supabase';
 
 export async function initializeGmailClient(userId: string) {
 	const { data: account } = await supabaseAdmin

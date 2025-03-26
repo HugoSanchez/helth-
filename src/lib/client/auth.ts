@@ -1,5 +1,5 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/client/supabase'
 
 /**
  * Client-side function to check if user has completed onboarding

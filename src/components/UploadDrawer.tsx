@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
 import { FileUpload } from "@/components/ui/file-upload"
 import { useState } from "react"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/client/supabase"
 
 interface UploadDrawerProps {
     isOpen: boolean

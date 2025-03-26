@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/client/supabase';
 
 interface UserPreferences {
     user_id: string;

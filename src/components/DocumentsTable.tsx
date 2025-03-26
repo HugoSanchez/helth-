@@ -45,35 +45,19 @@ const recordTypeConfig = {
     other: { icon: File, label: "Other", backgroundColor: "" }
 } as const;
 
-export function DocumentsTable() {
+interface DocumentsTableProps {
+    documents: HealthRecord[]
+}
+
+export function DocumentsTable({ documents }: DocumentsTableProps) {
     const [selectedRows, setSelectedRows] = useState<string[]>([])
     const [expandedRows, setExpandedRows] = useState<string[]>([])
-    const rows: HealthRecord[] = [
-        {
-            id: "1",
-            record_name: "Blood Test Results",
-            record_type: "lab_report",
-            doctor_name: "Dr. Sarah Wilson",
-            date: "2024-03-15",
-            file_url: "/documents/blood-test.pdf",
-            summary: "Complete blood count showing normal ranges for all major components. Cholesterol levels within acceptable range. Vitamin D slightly low, supplementation recommended."
-        },
-        {
-            id: "2",
-            record_name: "Annual Physical Notes",
-            record_type: "clinical_notes",
-            doctor_name: "Dr. James Chen",
-            date: "2024-02-20",
-            file_url: "/documents/physical-notes.pdf",
-            summary: "Routine physical examination showing good overall health. Blood pressure 120/80. Heart and lungs clear. Recommended regular exercise and maintaining current diet."
-        }
-    ]
 
     const toggleAll = () => {
-        if (selectedRows.length === rows.length) {
+        if (selectedRows.length === documents.length) {
             setSelectedRows([])
         } else {
-            setSelectedRows(rows.map(row => row.id))
+            setSelectedRows(documents.map(doc => doc.id))
         }
     }
 
@@ -120,7 +104,7 @@ export function DocumentsTable() {
                         <TableRow className="hover:bg-transparent">
                             <TableHead className="w-[50px]">
                                 <Checkbox
-                                    checked={selectedRows.length === rows.length}
+                                    checked={selectedRows.length === documents.length}
                                     onCheckedChange={toggleAll}
                                     aria-label="Select all"
                                 />
@@ -134,26 +118,26 @@ export function DocumentsTable() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {rows.map(row => {
-                            const RecordIcon = recordTypeConfig[row.record_type].icon;
-                            const isExpanded = expandedRows.includes(row.id);
+                        {documents.map(doc => {
+                            const RecordIcon = recordTypeConfig[doc.record_type].icon;
+                            const isExpanded = expandedRows.includes(doc.id);
                             return (
                                 <>
-                                    <TableRow key={row.id} data-state={selectedRows.includes(row.id) ? "selected" : undefined}>
+                                    <TableRow key={doc.id} data-state={selectedRows.includes(doc.id) ? "selected" : undefined}>
                                         <TableCell>
                                             <Checkbox
-                                                checked={selectedRows.includes(row.id)}
-                                                onCheckedChange={() => toggleRow(row.id)}
-                                                aria-label={`Select ${row.record_name}`}
+                                                checked={selectedRows.includes(doc.id)}
+                                                onCheckedChange={() => toggleRow(doc.id)}
+                                                aria-label={`Select ${doc.record_name}`}
                                             />
                                         </TableCell>
                                         <TableCell className="p-0">
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => toggleExpand(row.id)}
-                                                className={`h-8 w-8 ${!row.summary ? 'opacity-50' : ''}`}
-                                                disabled={!row.summary}
+                                                onClick={() => toggleExpand(doc.id)}
+                                                className={`h-8 w-8 ${!doc.summary ? 'opacity-50' : ''}`}
+                                                disabled={!doc.summary}
                                             >
                                                 {isExpanded ? (
                                                     <ChevronDown className="h-4 w-4" />
@@ -163,24 +147,24 @@ export function DocumentsTable() {
                                             </Button>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="font-medium">{row.record_name}</div>
+                                            <div className="font-medium">{doc.record_name}</div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
                                                 <Badge
                                                     variant="outline"
-                                                    className={`text-xs gap-2 border-none p-2 ${recordTypeConfig[row.record_type].backgroundColor}`}
+                                                    className={`text-xs gap-2 border-none p-2 ${recordTypeConfig[doc.record_type].backgroundColor}`}
                                                 >
                                                     <RecordIcon className={`h-4 w-4`} />
-                                                    {recordTypeConfig[row.record_type].label}
+                                                    {recordTypeConfig[doc.record_type].label}
                                                 </Badge>
                                             </div>
                                         </TableCell>
                                         <TableCell className="hidden md:table-cell">
-                                            {row.doctor_name || 'No doctor specified'}
+                                            {doc.doctor_name || 'No doctor specified'}
                                         </TableCell>
                                         <TableCell className="hidden md:table-cell">
-                                            {row.date ? format(new Date(row.date), 'MMMM, yyyy') : 'No date'}
+                                            {doc.date ? format(new Date(doc.date), 'MMMM, yyyy') : 'No date'}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
@@ -191,11 +175,11 @@ export function DocumentsTable() {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    {row.file_url && (
+                                                    {doc.file_url && (
                                                         <>
                                                             <DropdownMenuItem asChild>
                                                                 <Link
-                                                                    href={row.file_url}
+                                                                    href={doc.file_url}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
                                                                     className="flex items-center"
@@ -206,7 +190,7 @@ export function DocumentsTable() {
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem asChild>
                                                                 <Link
-                                                                    href={`${row.file_url}?download=true`}
+                                                                    href={`${doc.file_url}?download=true`}
                                                                     download
                                                                     className="flex items-center"
                                                                 >
@@ -217,7 +201,7 @@ export function DocumentsTable() {
                                                         </>
                                                     )}
                                                     <DropdownMenuItem
-                                                        onClick={() => handleShare(row.id)}
+                                                        onClick={() => handleShare(doc.id)}
                                                         className="flex items-center"
                                                     >
                                                         <Share2 className="mr-2 h-4 w-4" />
@@ -227,12 +211,12 @@ export function DocumentsTable() {
                                             </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
-                                    {isExpanded && row.summary && (
+                                    {isExpanded && doc.summary && (
                                         <TableRow>
                                             <TableCell colSpan={7}>
                                                 <div className="px-4 py-3 bg-muted/20 rounded-md">
                                                     <h4 className="font-medium mb-1">Summary</h4>
-                                                    <p className="text-sm text-muted-foreground">{row.summary}</p>
+                                                    <p className="text-sm text-muted-foreground">{doc.summary}</p>
                                                 </div>
                                             </TableCell>
                                         </TableRow>

@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '@/lib/server/supabase-admin';
+import { supabaseAdmin } from '@/lib/server/supabase';
 
 export async function storeDocument(userId: string, content: string, metadata: any) {
   try {

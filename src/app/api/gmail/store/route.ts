@@ -1,7 +1,7 @@
 import { google } from 'googleapis';
 import { authenticateUser, getGmailAccount } from '@/lib/server/auth';
 import { initializeGmailClient, getAttachmentContent } from '@/lib/server/gmail';
-import { supabaseAdmin } from '@/lib/server/supabase-admin';
+import { supabaseAdmin } from '@/lib/server/supabase';
 import { EmailClassification } from '@/types/gmail';
 
 interface StoreRequest {

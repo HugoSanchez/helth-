@@ -2,32 +2,33 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
-export async function GET(request: Request) {
-	const requestUrl = new URL(request.url)
-	const code = requestUrl.searchParams.get('code')
+// GET /api/auth/callback
 
-	if (code) {
+export async function GET(request: Request) {
+	try {
+		const requestUrl = new URL(request.url)
+		const code = requestUrl.searchParams.get('code')
+
+		if (!code) {
+			console.error('No code provided in callback')
+			return NextResponse.redirect(new URL('/login?error=no_code', request.url))
+		}
+
 		const cookieStore = cookies()
 		const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
-		try {
-			await supabase.auth.exchangeCodeForSession(code)
+		const { error } = await supabase.auth.exchangeCodeForSession(code)
 
-			// After exchanging the code, get the session
-			const { data: { session } } = await supabase.auth.getSession()
-
-			if (!session) {
-				console.error('No session after code exchange')
-				return NextResponse.redirect(new URL('/login', request.url))
-			}
-
-			return NextResponse.redirect(new URL('/dashboard', request.url))
-			} catch (error) {
-				console.error('Auth callback error:', error)
-				return NextResponse.redirect(new URL('/login', request.url))
+		if (error) {
+			console.error('Error exchanging code for session:', error)
+			return NextResponse.redirect(new URL(`/login?error=${error.message}`, request.url))
 		}
-	}
 
-	// No code, redirect to login
-	return NextResponse.redirect(new URL('/login', request.url))
+		// URL to redirect to after sign in process completes
+		return NextResponse.redirect(new URL('/dashboard', request.url))
+	} catch (error) {
+		console.error('Unexpected error in auth callback:', error)
+		return NextResponse.redirect(new URL('/login?error=unknown', request.url))
+	}
 }
+

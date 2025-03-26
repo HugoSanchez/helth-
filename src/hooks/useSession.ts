@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/client/supabase'
 import { hasCompletedOnboarding } from '@/lib/client/auth'
 
 interface UseSessionOptions {

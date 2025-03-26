@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Progress } from '@/components/ui/progress';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/client/supabase';
 
 type ScanStatus = {
   found: number;

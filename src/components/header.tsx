@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/client/supabase"
 
 export function Header() {
 	const router = useRouter()

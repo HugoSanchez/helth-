@@ -42,6 +42,9 @@ import {
 	TableRow
 } from '@/components/ui/table'
 
+import { fetchUserDocuments } from "@/lib/api/documents"
+import { HealthRecord } from "@/types/health"
+
 export default function DashboardPage() {
 	const searchParams = useSearchParams()
 	const { session, loading: sessionLoading } = useSession({ redirectTo: '/login', requireOnboarding: true })
@@ -52,6 +55,9 @@ export default function DashboardPage() {
 	const [isScanning, setIsScanning] = useState(false)
 	const [isUploadOpen, setIsUploadOpen] = useState(false)
 	const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info', text: string } | null>(null)
+	const [documents, setDocuments] = useState<HealthRecord[]>([])
+	const [isLoading, setIsLoading] = useState(true)
+	const [error, setError] = useState<string | null>(null)
 
 	// Update language when preferences change
 	useEffect(() => {
@@ -61,6 +67,21 @@ export default function DashboardPage() {
 		}
 	}, [preferences])
 
+	useEffect(() => {
+		async function loadDocuments() {
+			try {
+				const docs = await fetchUserDocuments()
+				setDocuments(docs)
+			} catch (err) {
+				setError(err instanceof Error ? err.message : 'Failed to load documents')
+			} finally {
+				setIsLoading(false)
+			}
+		}
+
+		loadDocuments()
+	}, [])
+
 	// Show loading state while checking session or loading preferences
 	if (sessionLoading || prefsLoading) {
 		return (
@@ -68,6 +89,14 @@ export default function DashboardPage() {
 				<p>{t('common.loading')}</p>
 			</main>
 		)
+	}
+
+	if (isLoading) {
+		return <div>Loading...</div>
+	}
+
+	if (error) {
+		return <div>Error: {error}</div>
 	}
 
 	return (
@@ -90,7 +119,7 @@ export default function DashboardPage() {
 			</div>
 			<div className="flex flex-1 flex-col gap-4 p-4 mt-6 md:gap-8 border border-border">
 				<div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
-					<DocumentsTable />
+					<DocumentsTable documents={documents} />
 					<Card>
 						<CardHeader>
 							<CardTitle>Doctors list</CardTitle>

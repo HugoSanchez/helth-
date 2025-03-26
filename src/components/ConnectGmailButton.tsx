@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { useRouter } from 'next/navigation'
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/client/supabase"
 
 export function ConnectGmail() {
   const router = useRouter()
