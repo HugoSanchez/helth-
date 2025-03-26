@@ -14,7 +14,10 @@ import {
 	AvatarFallback,
 	AvatarImage
 } from '@/components/ui/avatar'
-import { fetchUserDocuments, APIError } from '@/lib/api/documents'
+import { fetchUserDocuments, analyzeDocument, APIError } from '@/lib/api/documents'
+
+// Let's verify the analyzeDocument function
+console.log('analyzeDocument function available:', !!analyzeDocument)
 
 export default function DashboardPage() {
 	const router = useRouter()
@@ -24,35 +27,26 @@ export default function DashboardPage() {
 	const [isLoading, setIsLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
-	// Check authentication
-	useEffect(() => {
-		const checkAuth = async () => {
-			try {
-				const { data: { user } } = await supabase.auth.getUser()
-				if (!user) {
-					router.replace('/login')
-				}
-			} catch (error) {
-				console.error('Auth check error:', error)
-				router.replace('/login')
-			}
-		}
-
-		checkAuth()
-	}, [router, supabase])
-
-	// Fetch documents
+	// Check authentication and fetch documents
 	useEffect(() => {
 		let mounted = true
 
-		const fetchDocuments = async () => {
+		const initializeDashboard = async () => {
 			try {
+				// Check auth first
+				const { data: { user } } = await supabase.auth.getUser()
+				if (!user) {
+					router.replace('/login')
+					return
+				}
+
+				// Then fetch documents
 				const data = await fetchUserDocuments()
 				if (mounted) {
 					setDocuments(data)
 				}
 			} catch (err) {
-				console.error('Error fetching documents:', err)
+				console.error('Dashboard initialization error:', err)
 				if (mounted) {
 					if (err instanceof APIError && err.isAuthError) {
 						router.replace('/login')
@@ -67,12 +61,44 @@ export default function DashboardPage() {
 			}
 		}
 
-		fetchDocuments()
+		initializeDashboard()
 
 		return () => {
 			mounted = false
 		}
-	}, [router])
+	}, [router, supabase])
+
+	const handleFileSelect = async (file: File) => {
+		console.log('handleFileSelect called with file:', {
+			name: file.name,
+			type: file.type,
+			size: file.size
+		})
+
+		try {
+			setIsLoading(true)
+			console.log('Starting document analysis for:', file.name)
+
+			console.log('Calling analyzeDocument...')
+			const result = await analyzeDocument(file)
+			console.log('Analysis response:', result)
+
+			console.log('Fetching updated documents list...')
+			const newDocs = await fetchUserDocuments()
+			console.log('New documents:', newDocs)
+
+			setDocuments(newDocs)
+		} catch (err) {
+			console.error('Error details:', {
+				name: err instanceof Error ? err.name : 'Unknown',
+				message: err instanceof Error ? err.message : 'Unknown error',
+				error: err
+			})
+			setError(err instanceof Error ? err.message : 'Failed to upload document')
+		} finally {
+			setIsLoading(false)
+		}
+	}
 
 	if (prefsLoading || isLoading) {
 		return (
@@ -93,6 +119,11 @@ export default function DashboardPage() {
 		)
 	}
 
+	// Log if no documents are found
+	if (documents.length === 0) {
+		console.log('No documents found for user')
+	}
+
 	return (
 		<main className="py-12 md:px-16">
 			<div className="flex items-center justify-between pb-4">
@@ -101,7 +132,7 @@ export default function DashboardPage() {
 						Welcome, {preferences?.display_name || 'User'}
 					</h1>
 					<h1 className="text-2xl font-light">
-						This is your dashboard
+						 this is your Dashboard.
 					</h1>
 				</div>
 				<div>
@@ -113,7 +144,10 @@ export default function DashboardPage() {
 			</div>
 			<div className="flex flex-1 flex-col gap-4 p-4 mt-6 md:gap-8 border border-border">
 				<div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
-					<DocumentsTable documents={documents} />
+					<DocumentsTable
+						documents={documents}
+						onFileSelect={handleFileSelect}
+					/>
 					<Card>
 						<CardHeader>
 							<CardTitle>Doctors list</CardTitle>
