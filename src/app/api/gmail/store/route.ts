@@ -1,8 +1,9 @@
 import { google } from 'googleapis';
-import { authenticateUser, getGmailAccount } from '@/lib/server/auth';
+import { authenticateRequest, getGmailAccount } from '@/lib/server/auth';
 import { initializeGmailClient, getAttachmentContent } from '@/lib/server/gmail';
 import { supabaseAdmin } from '@/lib/server/supabase';
 import { EmailClassification } from '@/types/gmail';
+import { NextResponse } from 'next/server';
 
 interface StoreRequest {
     emails: EmailClassification[];
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
 
         // Step 1: Parse request and authenticate
         const { emails } = await request.json() as StoreRequest;
-        const userId = await authenticateUser(request.headers.get('Authorization'));
+        const userId = await authenticateRequest();
         console.log(`Processing ${emails.length} emails for user ${userId}`);
 
         // Step 2: Get Gmail access
@@ -125,14 +126,14 @@ export async function POST(request: Request) {
         }
 
         console.log(`Storage process complete. Stored: ${results.stored}, Failed: ${results.failed}`);
-        return Response.json(results);
+        return NextResponse.json(results);
 
     } catch (error) {
         console.error('Error storing medical documents:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        return Response.json(
+        return NextResponse.json(
             { error: `Error storing medical documents: ${errorMessage}` },
-            { status: 500 }
+            { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 500 }
         );
     }
 }

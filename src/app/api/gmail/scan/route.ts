@@ -1,9 +1,10 @@
 import { google } from 'googleapis';
-import { authenticateUser, getGmailAccount } from '@/lib/server/auth';
+import { authenticateRequest, getGmailAccount } from '@/lib/server/auth';
 import { initializeGmailClient, fetchAndProcessEmails, getAttachmentContent } from '@/lib/server/gmail';
 import { screenEmailSubjects } from '@/lib/server/openai';
 import { GmailMessage, GmailScanResponse, EmailClassification } from '@/types/gmail';
 import { supabaseAdmin } from '@/lib/server/supabase';
+import { NextResponse } from 'next/server';
 
 /**
  * Format the scan results for frontend consumption
@@ -117,9 +118,8 @@ export async function POST(request: Request) {
 	try {
 		console.log('Starting Gmail scan process...');
 
-		// Step 1: Authentication & Authorization
-		console.log('Checking authorization...');
-		const userId = await authenticateUser(request.headers.get('Authorization'));
+		// Step 1: Authentication using improved auth utility
+		const userId = await authenticateRequest();
 
 		// Step 2: Gmail Account Access
 		console.log('Retrieving Gmail account details...');
@@ -135,7 +135,7 @@ export async function POST(request: Request) {
 		const messages = await fetchAndProcessEmails(gmail);
 
 		if (messages.length === 0) {
-			return Response.json({
+			return NextResponse.json({
 				message: 'No emails with attachments found',
 				total: 0,
 				medicalCount: 0,
@@ -164,14 +164,14 @@ export async function POST(request: Request) {
 		};
 
 		console.log('Scan complete:', response);
-		return Response.json(response);
+		return NextResponse.json(response);
 
 	} catch (error) {
 		console.error('Error scanning Gmail:', error);
 		const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-		return Response.json(
+		return NextResponse.json(
 			{ error: `Error scanning Gmail: ${errorMessage}` },
-			{ status: 500 }
+			{ status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 500 }
 		);
 	}
 }

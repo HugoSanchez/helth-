@@ -1,102 +1,96 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
-import { ConnectGmail } from '@/components/ConnectGmailButton'
-import { StatusMessage } from '@/components/StatusMessage'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { EmailClassification } from '@/types/gmail'
-import { UploadDrawer } from '@/components/UploadDrawer'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useSession } from '@/hooks/useSession'
-import { hasGmailConnection } from '@/lib/client/auth'
 import { usePreferences } from '@/hooks/usePreferences'
-import { useTranslation } from '@/hooks/useTranslation'
-import { Language } from '@/lib/translations'
 import { DocumentsTable } from '@/components/DocumentsTable'
-import Link from "next/link"
-import {
-	Activity,
-	ArrowUpRight,
-	CircleUser,
-	CreditCard,
-	DollarSign,
-	Search,
-	Users,
-	Upload,
-	CopyIcon
-} from "lucide-react"
-
+import { HealthRecord } from '@/types/health'
+import { Upload } from 'lucide-react'
 import {
 	Avatar,
 	AvatarFallback,
 	AvatarImage
 } from '@/components/ui/avatar'
-
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow
-} from '@/components/ui/table'
-
-import { fetchUserDocuments } from "@/lib/api/documents"
-import { HealthRecord } from "@/types/health"
+import { fetchUserDocuments, APIError } from '@/lib/api/documents'
 
 export default function DashboardPage() {
-	const searchParams = useSearchParams()
-	const { session, loading: sessionLoading } = useSession({ redirectTo: '/login', requireOnboarding: true })
-	const { preferences, loading: prefsLoading } = usePreferences()
-	const [currentLanguage, setCurrentLanguage] = useState<Language>('en')
-	const { t } = useTranslation(currentLanguage)
-	const [isConnected, setIsConnected] = useState(false)
-	const [isScanning, setIsScanning] = useState(false)
-	const [isUploadOpen, setIsUploadOpen] = useState(false)
-	const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info', text: string } | null>(null)
+	const router = useRouter()
+	const supabase = createClientComponentClient()
+	const { preferences, loading: prefsLoading, error: prefsError } = usePreferences()
 	const [documents, setDocuments] = useState<HealthRecord[]>([])
 	const [isLoading, setIsLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
-	// Update language when preferences change
+	// Check authentication
 	useEffect(() => {
-		if (preferences?.language) {
-			console.log('Setting language to:', preferences.language)
-			setCurrentLanguage(preferences.language)
-		}
-	}, [preferences])
-
-	useEffect(() => {
-		async function loadDocuments() {
+		const checkAuth = async () => {
 			try {
-				const docs = await fetchUserDocuments()
-				setDocuments(docs)
-			} catch (err) {
-				setError(err instanceof Error ? err.message : 'Failed to load documents')
-			} finally {
-				setIsLoading(false)
+				const { data: { user } } = await supabase.auth.getUser()
+				if (!user) {
+					router.replace('/login')
+				}
+			} catch (error) {
+				console.error('Auth check error:', error)
+				router.replace('/login')
 			}
 		}
 
-		loadDocuments()
-	}, [])
+		checkAuth()
+	}, [router, supabase])
 
-	// Show loading state while checking session or loading preferences
-	if (sessionLoading || prefsLoading) {
+	// Fetch documents
+	useEffect(() => {
+		let mounted = true
+
+		const fetchDocuments = async () => {
+			try {
+				const data = await fetchUserDocuments()
+				if (mounted) {
+					setDocuments(data)
+				}
+			} catch (err) {
+				console.error('Error fetching documents:', err)
+				if (mounted) {
+					if (err instanceof APIError && err.isAuthError) {
+						router.replace('/login')
+					} else {
+						setError(err instanceof Error ? err.message : 'Failed to fetch documents')
+					}
+				}
+			} finally {
+				if (mounted) {
+					setIsLoading(false)
+				}
+			}
+		}
+
+		fetchDocuments()
+
+		return () => {
+			mounted = false
+		}
+	}, [router])
+
+	if (prefsLoading || isLoading) {
 		return (
-			<main className="container flex items-center justify-center min-h-screen">
-				<p>{t('common.loading')}</p>
+			<main className="flex items-center justify-center min-h-screen">
+				<p>Loading...</p>
 			</main>
 		)
 	}
 
-	if (isLoading) {
-		return <div>Loading...</div>
-	}
-
-	if (error) {
-		return <div>Error: {error}</div>
+	if (prefsError || error) {
+		return (
+			<main className="flex items-center justify-center min-h-screen">
+				<div className="text-center">
+					<h2 className="text-xl font-semibold mb-2">Error</h2>
+					<p className="text-red-500">{prefsError || error}</p>
+				</div>
+			</main>
+		)
 	}
 
 	return (
@@ -104,16 +98,16 @@ export default function DashboardPage() {
 			<div className="flex items-center justify-between pb-4">
 				<div className="flex flex-col">
 					<h1 className="text-2xl font-bold">
-						{t('dashboard.greeting').replace('{name}', preferences?.displayName || '')}
+						Welcome, {preferences?.display_name || 'User'}
 					</h1>
 					<h1 className="text-2xl font-light">
-						{t('dashboard.thisIsYourDashboard')}
+						This is your dashboard
 					</h1>
 				</div>
 				<div>
 					<Button>
-						<Upload />
-						{t('dashboard.uploadButton')}
+						<Upload className="mr-2 h-4 w-4" />
+						Upload Document
 					</Button>
 				</div>
 			</div>

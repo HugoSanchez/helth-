@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { authenticateUser } from '@/lib/server/auth'
+import { authenticateRequest } from '@/lib/server/auth'
 import { analyzeDocument } from '@/lib/server/anthropic'
 import { storeDocument } from '@/lib/server/db'
 
@@ -27,8 +27,8 @@ export const config = {
  */
 export async function POST(req: Request) {
     try {
-        // Authenticate user
-        const userId = await authenticateUser(req.headers.get('Authorization'))
+        // Authenticate user using improved auth utility
+        const userId = await authenticateRequest();
 
         // Get and validate the form data
         const formData = await req.formData()
@@ -48,11 +48,11 @@ export async function POST(req: Request) {
         const base64Pdf = buffer.toString('base64')
 
         // Analyze document with Claude
-		console.log('[Claude] Analyzing document...')
+        console.log('[Claude] Analyzing document...')
         const analysis = await analyzeDocument(base64Pdf)
 
         // Store document in Supabase
-		console.log('[Claude] Storing document...', analysis)
+        console.log('[Claude] Storing document...', analysis)
         await storeDocument(userId, file.name, buffer)
 
         // Return the analysis results
@@ -63,6 +63,7 @@ export async function POST(req: Request) {
         })
 
     } catch (error) {
+        console.error('Error analyzing document:', error)
         return NextResponse.json(
             { error: error instanceof Error ? error.message : 'Internal server error' },
             { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 500 }

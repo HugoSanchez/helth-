@@ -26,16 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useState } from "react"
 import { format } from "date-fns"
-
-interface HealthRecord {
-    id: string;
-    record_name: string;
-    record_type: "lab_report" | "prescription" | "imaging" | "clinical_notes" | "other";
-    doctor_name: string | null;
-    date: string | null;
-    file_url: string | null;
-    summary?: string;
-}
+import { HealthRecord } from "@/types/health"
 
 const recordTypeConfig = {
     lab_report: { icon: TestTube, label: "Lab Report", backgroundColor: "" },

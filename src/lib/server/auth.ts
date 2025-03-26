@@ -11,13 +11,13 @@ import { NextResponse } from 'next/server';
  */
 export async function authenticateRequest() {
     const supabase = createRouteHandlerClient({ cookies })
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { user }, error } = await supabase.auth.getUser()
 
-    if (!session) {
+    if (error || !user) {
         throw new Error('Unauthorized')
     }
 
-    return session.user.id
+    return user.id
 }
 
 /**

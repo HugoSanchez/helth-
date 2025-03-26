@@ -2,10 +2,9 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
-export async function GET(request: Request) {
+export async function GET() {
     try {
-        const cookieStore = cookies()
-        const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+        const supabase = createRouteHandlerClient({ cookies })
 
         // Use getUser() instead of getSession() for better security
         const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -18,22 +17,22 @@ export async function GET(request: Request) {
             )
         }
 
-        // Fetch user's documents
-        const { data: documents, error: documentsError } = await supabase
-            .from('health_records')
+        // Fetch user preferences
+        const { data: preferences, error: preferencesError } = await supabase
+            .from('user_preferences')
             .select('*')
             .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
+            .single()
 
-        if (documentsError) {
-            console.error('Error fetching documents:', documentsError)
+        if (preferencesError) {
+            console.error('Error fetching preferences:', preferencesError)
             return NextResponse.json(
-                { error: 'Failed to fetch documents' },
+                { error: 'Failed to fetch preferences' },
                 { status: 500 }
             )
         }
 
-        return NextResponse.json(documents)
+        return NextResponse.json(preferences || {})
     } catch (error) {
         console.error('Unexpected error:', error)
         return NextResponse.json(
