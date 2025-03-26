@@ -64,19 +64,20 @@ export default function LoginPage() {
 	}
 
 	return (
-		<div className="min-h-screen flex items-center justify-center bg-gray-50">
-			<Card className="w-[350px] py-4">
+		<div className="min-h-screen flex justify-center">
+			<div className="mt-16 md:mt-28">
+			<Card className="w-[450px] py-4">
 				<CardHeader className="text-center">
-				<CardTitle className="text-2xl">Welcome to Helth</CardTitle>
-				<CardDescription className="">
-					Sign in via magic link with your email below
+				<CardTitle className="text-3xl">Welcome, please log in.</CardTitle>
+				<CardDescription className="font-light text-lg">
+					Type your email below to get a magic link
 				</CardDescription>
 				</CardHeader>
 				<CardContent>
 				<form onSubmit={handleLogin} className="space-y-4">
 					<Input
 						type="email"
-						className="h-12 text-md"
+						className="h-12 text-md bg-white"
 						placeholder="Your email"
 						value={email}
 						onChange={(e) => setEmail(e.target.value)}
@@ -97,6 +98,8 @@ export default function LoginPage() {
 				</form>
 				</CardContent>
 			</Card>
+			</div>
+
 		</div>
 	)
 }

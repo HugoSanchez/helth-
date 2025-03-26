@@ -27,16 +27,16 @@ export const translations = {
                 benefits: {
                     title: "Benefits of connecting your Gmail:",
                     items: [
-                        "Automatically find medical documents in your inbox",
                         "Save time by avoiding manual uploads",
-                        "Never miss important medical information",
-                        "Secure and private - we only access medical-related emails"
+                        "Don't miss important medical information",
+						"Automatically find medical documents in your inbox",
+                        "Secure and private - we only access medical-related emails and we only store the documents you asks us to keep"
                     ]
                 }
             }
         },
         dashboard: {
-            greetinf: "Hi {name},",
+            greeting: "Hi {name},",
 			thisIsYourDashboard: "this is your dashboard",
             description: "This will be your Dashboard. Start by scanning your emails for medical documents or you can upload your first document.",
             scanButton: "Scan Medical Documents",
