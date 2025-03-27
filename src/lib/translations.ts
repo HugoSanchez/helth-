@@ -61,6 +61,8 @@ export const translations = {
             description: "From most recent to oldest",
             table: {
                 selectAll: "Select all",
+                selectDocument: "Select {name}",
+                summary: "Summary",
                 name: "Name",
                 type: "Type",
                 doctor: "Doctor",
@@ -96,7 +98,7 @@ export const translations = {
             back: "Atrás",
             skip: "Omitir este paso",
             continue: "Continuar",
-            upload: "Subir",
+            upload: "Subir archivo",
             browse: "Explorar Archivos",
             or: "o"
         },
@@ -150,6 +152,8 @@ export const translations = {
             description: "Del más reciente al más antiguo",
             table: {
                 selectAll: "Seleccionar todo",
+                selectDocument: "Seleccionar {name}",
+                summary: "Resumen",
                 name: "Nombre",
                 type: "Tipo",
                 doctor: "Doctor",

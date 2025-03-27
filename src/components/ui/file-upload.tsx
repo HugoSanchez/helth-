@@ -11,6 +11,7 @@ interface FileUploadProps extends React.HTMLAttributes<HTMLDivElement> {
     maxSize?: number // in bytes
     disabled?: boolean
     message?: string
+    language?: "en" | "es"
 }
 
 export function FileUpload({
@@ -20,9 +21,10 @@ export function FileUpload({
     maxSize = 10 * 1024 * 1024, // 10MB default
     disabled = false,
     message,
+    language = "en",
     ...props
 }: FileUploadProps) {
-    const { t } = useTranslation()
+    const { t } = useTranslation(language)
     const [isDragging, setIsDragging] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const fileInputRef = React.useRef<HTMLInputElement>(null)

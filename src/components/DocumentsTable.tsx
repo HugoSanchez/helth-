@@ -31,6 +31,8 @@ import { format } from "date-fns"
 import { HealthRecord } from "@/types/health"
 import { FileUpload } from "@/components/ui/file-upload"
 import { useTranslation } from "@/hooks/useTranslation"
+import { Language } from '@/lib/translations'
+import { Spinner } from "@/components/ui/spinner"
 
 const recordTypeConfig = {
     lab_report: { icon: TestTube, label: "documents.types.lab_report", backgroundColor: "" },
@@ -43,12 +45,14 @@ const recordTypeConfig = {
 interface DocumentsTableProps {
     documents: HealthRecord[]
     onFileSelect?: (file: File) => void
+    language?: Language
 }
 
-export function DocumentsTable({ documents, onFileSelect }: DocumentsTableProps) {
-    const { t } = useTranslation()
+export function DocumentsTable({ documents, onFileSelect, language = 'en' }: DocumentsTableProps) {
+    const { t } = useTranslation(language)
     const [selectedRows, setSelectedRows] = useState<string[]>([])
     const [expandedRows, setExpandedRows] = useState<string[]>([])
+    const [isUploading, setIsUploading] = useState(false)
 
     const toggleAll = () => {
         if (selectedRows.length === documents.length) {
@@ -79,6 +83,15 @@ export function DocumentsTable({ documents, onFileSelect }: DocumentsTableProps)
         console.log('Share document:', id)
     }
 
+    const handleFileSelect = async (file: File) => {
+        try {
+            setIsUploading(true)
+            await onFileSelect?.(file)
+        } finally {
+            setIsUploading(false)
+        }
+    }
+
     if (documents.length === 0) {
         return (
             <Card className="xl:col-span-2">
@@ -88,12 +101,13 @@ export function DocumentsTable({ documents, onFileSelect }: DocumentsTableProps)
                         {t('documents.emptyState.title')}
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="relative">
                     <FileUpload
-                        onFileSelect={onFileSelect || (() => {})}
-                        disabled={!onFileSelect}
+                        onFileSelect={handleFileSelect}
+                        disabled={!onFileSelect || isUploading}
                         className="bg-[#f8f7f5]"
                         message={t('documents.emptyState.message')}
+                        language={language}
                     />
                 </CardContent>
             </Card>
@@ -110,8 +124,17 @@ export function DocumentsTable({ documents, onFileSelect }: DocumentsTableProps)
                     </CardDescription>
                 </div>
                 {onFileSelect && (
-                    <Button size="sm" className="gap-1 ml-auto" onClick={() => document.getElementById('fileInput')?.click()}>
-                        <Upload className="h-4 w-4" />
+                    <Button
+                        size="sm"
+                        className="gap-1 ml-auto"
+                        onClick={() => document.getElementById('fileInput')?.click()}
+                        disabled={isUploading}
+                    >
+                        {isUploading ? (
+                            <Spinner size="sm" className="mr-2" />
+                        ) : (
+                            <Upload className="h-4 w-4 mr-2" />
+                        )}
                         {t('common.upload')}
                     </Button>
                 )}
@@ -122,13 +145,14 @@ export function DocumentsTable({ documents, onFileSelect }: DocumentsTableProps)
                     accept="application/pdf"
                     onChange={(e) => {
                         const file = e.target.files?.[0]
-                        if (file && onFileSelect) {
-                            onFileSelect(file)
+                        if (file) {
+                            handleFileSelect(file)
                         }
                     }}
+                    disabled={isUploading}
                 />
             </CardHeader>
-            <CardContent>
+            <CardContent className="relative">
                 <Table>
                     <TableHeader>
                         <TableRow className="hover:bg-transparent">
@@ -158,7 +182,7 @@ export function DocumentsTable({ documents, onFileSelect }: DocumentsTableProps)
                                             <Checkbox
                                                 checked={selectedRows.includes(doc.id)}
                                                 onCheckedChange={() => toggleRow(doc.id)}
-                                                aria-label={`Select ${doc.record_name}`}
+                                                aria-label={t('documents.table.selectDocument').replace('{name}', doc.record_name)}
                                             />
                                         </TableCell>
                                         <TableCell className="p-0">
@@ -245,7 +269,7 @@ export function DocumentsTable({ documents, onFileSelect }: DocumentsTableProps)
                                         <TableRow>
                                             <TableCell colSpan={7}>
                                                 <div className="px-4 py-3 bg-muted/20 rounded-md">
-                                                    <h4 className="font-medium mb-1">Summary</h4>
+                                                    <h4 className="font-medium mb-1">{t('documents.table.summary')}</h4>
                                                     <p className="text-sm text-muted-foreground">{doc.summary}</p>
                                                 </div>
                                             </TableCell>

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { authenticateRequest } from '@/lib/server/auth'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 import { analyzeDocument } from '@/lib/server/anthropic'
 import { storeDocument } from '@/lib/server/db'
 
@@ -27,8 +28,19 @@ export const config = {
  */
 export async function POST(req: Request) {
     try {
-        // Authenticate user using improved auth utility
-        const userId = await authenticateRequest();
+        const cookieStore = cookies()
+        const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+
+        // Use getUser() instead of getSession() for better security
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+        if (authError || !user) {
+            console.error('Auth error:', authError)
+            return NextResponse.json(
+                { error: 'Unauthorized' },
+                { status: 401 }
+            )
+        }
 
         // Get and validate the form data
         const formData = await req.formData()
@@ -53,7 +65,7 @@ export async function POST(req: Request) {
 
         // Store document in Supabase
         console.log('[Claude] Storing document...', analysis)
-        await storeDocument(userId, file.name, buffer)
+        await storeDocument(user.id, file.name, buffer)
 
         // Return the analysis results
         return NextResponse.json({

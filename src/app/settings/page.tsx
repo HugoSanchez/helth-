@@ -1,55 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Card } from "@/components/ui/card"
 import { usePreferences } from '@/hooks/usePreferences'
 import { Breadcrumb, type BreadcrumbStep } from '@/components/ui/breadcrumb'
 import { useTranslation } from '@/hooks/useTranslation'
 import { PreferencesStep } from '@/components/setup/PreferencesStep'
 import { ConnectStep } from '@/components/setup/ConnectStep'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { useRouter } from 'next/navigation'
 
 export default function SettingsPage() {
-    const router = useRouter()
-    const supabase = createClientComponentClient()
     const { preferences, loading: prefsLoading, error: prefsError } = usePreferences()
     const [currentStep, setCurrentStep] = useState(1)
-    const [isLoading, setIsLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
     const { t } = useTranslation(preferences?.language || 'en')
-
-    // Check authentication and initialize
-    useEffect(() => {
-        let mounted = true
-
-        const initializeSettings = async () => {
-            try {
-                // Check auth first
-                const { data: { user } } = await supabase.auth.getUser()
-                if (!user) {
-                    router.replace('/login')
-                    return
-                }
-            } catch (err) {
-                console.error('Settings initialization error:', err)
-                if (mounted) {
-                    setError(err instanceof Error ? err.message : 'Authentication failed')
-                    router.replace('/login')
-                }
-            } finally {
-                if (mounted) {
-                    setIsLoading(false)
-                }
-            }
-        }
-
-        initializeSettings()
-
-        return () => {
-            mounted = false
-        }
-    }, [router, supabase])
 
     const steps: BreadcrumbStep[] = [
         {
@@ -70,8 +32,8 @@ export default function SettingsPage() {
         }
     ]
 
-    // Show loading state while checking auth or loading preferences
-    if (isLoading || prefsLoading) {
+    // Show loading state while loading preferences
+    if (prefsLoading) {
         return (
             <main className="flex justify-center items-center min-h-screen">
                 <p>{t('common.loading')}</p>
@@ -80,12 +42,12 @@ export default function SettingsPage() {
     }
 
     // Show error state if there's an error
-    if (error || prefsError) {
+    if (prefsError) {
         return (
             <main className="flex justify-center items-center min-h-screen">
                 <div className="text-center">
                     <h2 className="text-xl font-semibold mb-2">Error</h2>
-                    <p className="text-red-500">{error || prefsError}</p>
+                    <p className="text-red-500">{prefsError}</p>
                 </div>
             </main>
         )
