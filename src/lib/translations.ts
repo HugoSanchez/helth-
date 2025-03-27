@@ -5,7 +5,10 @@ export const translations = {
             next: "Next",
             back: "Back",
             skip: "Skip",
-            continue: "Continue"
+            continue: "Continue",
+            upload: "Upload",
+            browse: "Browse Files",
+            or: "or"
         },
         setup: {
             welcome: "Welcome to helth.",
@@ -48,6 +51,42 @@ export const translations = {
         languages: {
             english: "English",
             spanish: "Spanish"
+        },
+        documents: {
+            title: "Your documents",
+            emptyState: {
+                title: "Start by uploading your first document",
+                message: "Upload your first document"
+            },
+            description: "From most recent to oldest",
+            table: {
+                selectAll: "Select all",
+                name: "Name",
+                type: "Type",
+                doctor: "Doctor",
+                date: "Date",
+                actions: "Actions",
+                noDoctorSpecified: "No doctor specified",
+                noDate: "No date",
+                viewDocument: "View document",
+                download: "Download",
+                share: "Share"
+            },
+            types: {
+                lab_report: "Lab Report",
+                prescription: "Prescription",
+                imaging: "Imaging",
+                clinical_notes: "Clinical Notes",
+                other: "Other"
+            }
+        },
+        fileUpload: {
+            dragDrop: "Click to upload or drag and drop",
+            fileSize: "PDF (up to 10MB)",
+            errors: {
+                pdfOnly: "Please upload a PDF file",
+                tooLarge: "File is too large. Maximum size is 10MB"
+            }
         }
     },
     es: {
@@ -56,7 +95,10 @@ export const translations = {
             next: "Siguiente",
             back: "Atrás",
             skip: "Omitir este paso",
-            continue: "Continuar"
+            continue: "Continuar",
+            upload: "Subir",
+            browse: "Explorar Archivos",
+            or: "o"
         },
         setup: {
             welcome: "Bienvenido a helth.",
@@ -98,6 +140,42 @@ export const translations = {
         languages: {
             english: "Inglés",
             spanish: "Español"
+        },
+        documents: {
+            title: "Tus documentos",
+            emptyState: {
+                title: "Comienza subiendo tu primer documento",
+                message: "Sube tu primer documento"
+            },
+            description: "Del más reciente al más antiguo",
+            table: {
+                selectAll: "Seleccionar todo",
+                name: "Nombre",
+                type: "Tipo",
+                doctor: "Doctor",
+                date: "Fecha",
+                actions: "Acciones",
+                noDoctorSpecified: "Doctor no especificado",
+                noDate: "Sin fecha",
+                viewDocument: "Ver documento",
+                download: "Descargar",
+                share: "Compartir"
+            },
+            types: {
+                lab_report: "Informe de Laboratorio",
+                prescription: "Receta",
+                imaging: "Imagen Médica",
+                clinical_notes: "Notas Clínicas",
+                other: "Otro"
+            }
+        },
+        fileUpload: {
+            dragDrop: "Haz clic para subir o arrastra y suelta",
+            fileSize: "PDF (hasta 10MB)",
+            errors: {
+                pdfOnly: "Por favor, sube un archivo PDF",
+                tooLarge: "El archivo es demasiado grande. El tamaño máximo es 10MB"
+            }
         }
     }
 } as const;

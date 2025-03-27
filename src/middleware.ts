@@ -13,7 +13,8 @@ export async function middleware(req: NextRequest) {
   if (!session && (
     req.nextUrl.pathname.startsWith('/dashboard') ||
     req.nextUrl.pathname.startsWith('/api/') ||
-    req.nextUrl.pathname.startsWith('/setup')
+    req.nextUrl.pathname.startsWith('/setup') ||
+    req.nextUrl.pathname.startsWith('/settings')
   )) {
     const redirectUrl = new URL('/login', req.url)
     return NextResponse.redirect(redirectUrl)

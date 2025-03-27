@@ -20,24 +20,25 @@ export function useSession({ redirectTo, requireOnboarding = false }: UseSession
 			const { data: { session: currentSession } } = await supabase.auth.getSession()
 
 			if (!currentSession && redirectTo) {
-			router.push(redirectTo)
-			return
+				console.log('Redirecting to:', redirectTo)
+				router.push(redirectTo)
+				return
 			}
 
 			if (currentSession && requireOnboarding) {
 			// Check if user has completed onboarding
 			const hasOnboarding = await hasCompletedOnboarding(currentSession.user.id)
-			if (!hasOnboarding) {
-				router.push('/setup')
-				return
-			}
+				if (!hasOnboarding) {
+					router.push('/setup')
+					return
+				}
 			}
 
 			setSession(currentSession)
 		} catch (error) {
 			console.error('Session check error:', error)
 			if (redirectTo) {
-			router.push(redirectTo)
+				router.push(redirectTo)
 			}
 		} finally {
 			setLoading(false)
@@ -48,11 +49,11 @@ export function useSession({ redirectTo, requireOnboarding = false }: UseSession
 
 		// Listen for auth state changes
 		const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-		setSession(session)
+			setSession(session)
 		})
 
 		return () => {
-		subscription.unsubscribe()
+			subscription.unsubscribe()
 		}
 	}, [redirectTo, requireOnboarding, router])
 

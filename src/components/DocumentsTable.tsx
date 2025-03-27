@@ -1,6 +1,5 @@
 import Link from "next/link"
-import { useState, useCallback } from "react"
-import { useDropzone } from "react-dropzone"
+import { useState } from "react"
 import {
     ArrowUpRight,
     TestTube,
@@ -28,16 +27,17 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { cn } from "@/lib/client/utils"
 import { format } from "date-fns"
 import { HealthRecord } from "@/types/health"
+import { FileUpload } from "@/components/ui/file-upload"
+import { useTranslation } from "@/hooks/useTranslation"
 
 const recordTypeConfig = {
-    lab_report: { icon: TestTube, label: "Lab Report", backgroundColor: "" },
-    prescription: { icon: Pill, label: "Prescription", backgroundColor: "" },
-    imaging: { icon: Scan, label: "Imaging", backgroundColor: "" },
-    clinical_notes: { icon: ClipboardList, label: "Clinical Notes", backgroundColor: "" },
-    other: { icon: File, label: "Other", backgroundColor: "" }
+    lab_report: { icon: TestTube, label: "documents.types.lab_report", backgroundColor: "" },
+    prescription: { icon: Pill, label: "documents.types.prescription", backgroundColor: "" },
+    imaging: { icon: Scan, label: "documents.types.imaging", backgroundColor: "" },
+    clinical_notes: { icon: ClipboardList, label: "documents.types.clinical_notes", backgroundColor: "" },
+    other: { icon: File, label: "documents.types.other", backgroundColor: "" }
 } as const;
 
 interface DocumentsTableProps {
@@ -46,52 +46,9 @@ interface DocumentsTableProps {
 }
 
 export function DocumentsTable({ documents, onFileSelect }: DocumentsTableProps) {
+    const { t } = useTranslation()
     const [selectedRows, setSelectedRows] = useState<string[]>([])
     const [expandedRows, setExpandedRows] = useState<string[]>([])
-    const [selectedFile, setSelectedFile] = useState<File | null>(null)
-    const [error, setError] = useState<string | null>(null)
-
-    const onDrop = useCallback((acceptedFiles: File[]) => {
-        console.log('onDrop triggered with files:', acceptedFiles.map(f => ({
-            name: f.name,
-            type: f.type,
-            size: f.size
-        })))
-
-        const file = acceptedFiles[0]
-        if (!file) {
-            console.log('No file provided')
-            return
-        }
-
-        // Validate file type
-        if (!file.type.includes('pdf')) {
-            console.log('Invalid file type:', file.type)
-            setError('Please upload a PDF file')
-            return
-        }
-
-        // Validate file size (10MB limit)
-        const MAX_SIZE = 10 * 1024 * 1024 // 10MB in bytes
-        if (file.size > MAX_SIZE) {
-            console.log('File too large:', file.size)
-            setError('File size must be less than 10MB')
-            return
-        }
-
-        console.log('File validation passed, calling onFileSelect with file:', file.name)
-        setSelectedFile(file)
-        onFileSelect?.(file)
-    }, [onFileSelect])
-
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({
-        onDrop,
-        accept: {
-            'application/pdf': ['.pdf']
-        },
-        maxFiles: 1,
-        disabled: !onFileSelect
-    })
 
     const toggleAll = () => {
         if (selectedRows.length === documents.length) {
@@ -124,87 +81,20 @@ export function DocumentsTable({ documents, onFileSelect }: DocumentsTableProps)
 
     if (documents.length === 0) {
         return (
-            <Card className="xl:col-span-2 ">
+            <Card className="xl:col-span-2">
                 <CardHeader>
-                    <CardTitle>Your documents</CardTitle>
+                    <CardTitle>{t('documents.title')}</CardTitle>
                     <CardDescription>
-                        Start by uploading your first document
+                        {t('documents.emptyState.title')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div
-                        {...getRootProps()}
-                        className={cn(
-                            "relative border-2 border-dashed rounded-lg p-8 transition-colors",
-                            isDragActive ? "border-primary bg-primary/5" : "bg-[#f8f7f5]",
-                            selectedFile && "border-success bg-success/5",
-                            error && "border-destructive bg-destructive/5",
-                            !onFileSelect && "opacity-50 cursor-not-allowed"
-                        )}
-                    >
-                        <input {...getInputProps()} />
-                        <div className="flex flex-col items-center justify-center text-center space-y-4">
-                            {!selectedFile && !error && (
-                                <>
-                                    <Upload className="h-12 w-12 text-muted-foreground" />
-                                    <div className="space-y-2">
-                                        <h3 className="font-semibold text-lg">
-                                            {isDragActive ? "Drop your file here" : "No documents yet"}
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                                            {onFileSelect
-                                                ? "Drag and drop your PDF file here, or click to browse. We support PDF files up to 10MB."
-                                                : "You don't have any documents yet. They will appear here once uploaded."
-                                            }
-                                        </p>
-                                    </div>
-                                    {onFileSelect && (
-                                        <Button variant="default" className="mt-4">
-                                            Choose file
-                                        </Button>
-                                    )}
-                                </>
-                            )}
-
-                            {selectedFile && (
-                                <div className="flex items-center gap-4">
-                                    <File className="h-8 w-8 text-primary" />
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium truncate">{selectedFile.name}</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                                        </p>
-                                    </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            setSelectedFile(null)
-                                            setError(null)
-                                        }}
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            )}
-
-                            {error && (
-                                <div className="text-center space-y-2">
-                                    <p className="text-destructive font-medium">{error}</p>
-                                    <Button
-                                        variant="outline"
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            setError(null)
-                                        }}
-                                    >
-                                        Try again
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    <FileUpload
+                        onFileSelect={onFileSelect || (() => {})}
+                        disabled={!onFileSelect}
+                        className="bg-[#f8f7f5]"
+                        message={t('documents.emptyState.message')}
+                    />
                 </CardContent>
             </Card>
         )
@@ -214,20 +104,29 @@ export function DocumentsTable({ documents, onFileSelect }: DocumentsTableProps)
         <Card className="xl:col-span-2">
             <CardHeader className="flex flex-row items-center">
                 <div className="grid gap-2">
-                    <CardTitle>Your documents</CardTitle>
+                    <CardTitle>{t('documents.title')}</CardTitle>
                     <CardDescription>
-                        From most recent to oldest.
+                        {t('documents.description')}
                     </CardDescription>
                 </div>
                 {onFileSelect && (
-                    <div {...getRootProps()} className="ml-auto">
-                        <input {...getInputProps()} />
-                        <Button size="sm" className="gap-1">
-                            <Upload className="h-4 w-4" />
-                            Upload
-                        </Button>
-                    </div>
+                    <Button size="sm" className="gap-1 ml-auto" onClick={() => document.getElementById('fileInput')?.click()}>
+                        <Upload className="h-4 w-4" />
+                        {t('common.upload')}
+                    </Button>
                 )}
+                <input
+                    id="fileInput"
+                    type="file"
+                    className="hidden"
+                    accept="application/pdf"
+                    onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file && onFileSelect) {
+                            onFileSelect(file)
+                        }
+                    }}
+                />
             </CardHeader>
             <CardContent>
                 <Table>
@@ -237,15 +136,15 @@ export function DocumentsTable({ documents, onFileSelect }: DocumentsTableProps)
                                 <Checkbox
                                     checked={selectedRows.length === documents.length}
                                     onCheckedChange={toggleAll}
-                                    aria-label="Select all"
+                                    aria-label={t('documents.table.selectAll')}
                                 />
                             </TableHead>
                             <TableHead className="w-[30px]"></TableHead>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead className="hidden md:table-cell">Doctor</TableHead>
-                            <TableHead className="hidden md:table-cell">Date</TableHead>
-                            <TableHead className="w-[70px] text-right">Actions</TableHead>
+                            <TableHead>{t('documents.table.name')}</TableHead>
+                            <TableHead>{t('documents.table.type')}</TableHead>
+                            <TableHead className="hidden md:table-cell">{t('documents.table.doctor')}</TableHead>
+                            <TableHead className="hidden md:table-cell">{t('documents.table.date')}</TableHead>
+                            <TableHead className="w-[70px] text-right">{t('documents.table.actions')}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -287,22 +186,22 @@ export function DocumentsTable({ documents, onFileSelect }: DocumentsTableProps)
                                                     className={`text-xs gap-2 border-none p-2 ${recordTypeConfig[doc.record_type].backgroundColor}`}
                                                 >
                                                     <RecordIcon className={`h-4 w-4`} />
-                                                    {recordTypeConfig[doc.record_type].label}
+                                                    {t(recordTypeConfig[doc.record_type].label)}
                                                 </Badge>
                                             </div>
                                         </TableCell>
                                         <TableCell className="hidden md:table-cell">
-                                            {doc.doctor_name || 'No doctor specified'}
+                                            {doc.doctor_name || t('documents.table.noDoctorSpecified')}
                                         </TableCell>
                                         <TableCell className="hidden md:table-cell">
-                                            {doc.date ? format(new Date(doc.date), 'MMMM, yyyy') : 'No date'}
+                                            {doc.date ? format(new Date(doc.date), 'MMMM, yyyy') : t('documents.table.noDate')}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant="ghost" size="icon">
                                                         <MoreVertical className="h-4 w-4" />
-                                                        <span className="sr-only">Open menu</span>
+                                                        <span className="sr-only">{t('documents.table.actions')}</span>
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
@@ -316,7 +215,7 @@ export function DocumentsTable({ documents, onFileSelect }: DocumentsTableProps)
                                                                     className="flex items-center"
                                                                 >
                                                                     <Eye className="mr-2 h-4 w-4" />
-                                                                    View document
+                                                                    {t('documents.table.viewDocument')}
                                                                 </Link>
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem asChild>
@@ -326,7 +225,7 @@ export function DocumentsTable({ documents, onFileSelect }: DocumentsTableProps)
                                                                     className="flex items-center"
                                                                 >
                                                                     <Download className="mr-2 h-4 w-4" />
-                                                                    Download
+                                                                    {t('documents.table.download')}
                                                                 </Link>
                                                             </DropdownMenuItem>
                                                         </>
@@ -336,7 +235,7 @@ export function DocumentsTable({ documents, onFileSelect }: DocumentsTableProps)
                                                         className="flex items-center"
                                                     >
                                                         <Share2 className="mr-2 h-4 w-4" />
-                                                        Share
+                                                        {t('documents.table.share')}
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>

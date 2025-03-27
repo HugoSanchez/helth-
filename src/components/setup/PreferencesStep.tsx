@@ -4,7 +4,6 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from "@/component
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useTranslation } from '@/hooks/useTranslation'
 import { Language } from '@/lib/translations'
-import { useSession } from '@/hooks/useSession'
 import { usePreferences, type Preferences } from '@/hooks/usePreferences'
 
 interface PreferencesStepProps {
@@ -13,12 +12,11 @@ interface PreferencesStepProps {
 }
 
 export function PreferencesStep({ onComplete, initialPreferences }: PreferencesStepProps) {
-    const { session } = useSession()
     const { updatePreferences } = usePreferences()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [formData, setFormData] = useState({
-        displayName: initialPreferences?.displayName || '',
+        display_name: initialPreferences?.display_name || '',
         language: initialPreferences?.language || 'en' as Language
     })
 
@@ -27,7 +25,7 @@ export function PreferencesStep({ onComplete, initialPreferences }: PreferencesS
     useEffect(() => {
         if (initialPreferences) {
             setFormData({
-                displayName: initialPreferences.displayName,
+                display_name: initialPreferences.display_name,
                 language: initialPreferences.language
             })
             setLanguage(initialPreferences.language)
@@ -40,17 +38,12 @@ export function PreferencesStep({ onComplete, initialPreferences }: PreferencesS
         setError(null)
 
         try {
-            if (!session) {
-                throw new Error('No session found')
-            }
-
             await updatePreferences({
-                displayName: formData.displayName,
+                display_name: formData.display_name,
                 language: formData.language,
             })
 
             onComplete()
-
         } catch (err) {
             console.error('Setup error:', err)
             setError(err instanceof Error ? err.message : 'Something went wrong')
@@ -70,16 +63,16 @@ export function PreferencesStep({ onComplete, initialPreferences }: PreferencesS
             <CardContent>
                 <form onSubmit={handleSubmit}>
                     <div className="space-y-2">
-                        <label htmlFor="displayName" className="text-md">
+                        <label htmlFor="display_name" className="text-md">
                             {t('setup.nameLabel')}
                         </label>
                         <input
-                            id="displayName"
+                            id="display_name"
                             type="text"
-                            value={formData.displayName}
+                            value={formData.display_name}
                             onChange={(e) => setFormData(prev => ({
                                 ...prev,
-                                displayName: e.target.value
+                                display_name: e.target.value
                             }))}
                             className="w-full p-2 h-12 border rounded-md text-sm"
                             required

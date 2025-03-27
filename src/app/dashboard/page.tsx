@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { usePreferences } from '@/hooks/usePreferences'
 import { DocumentsTable } from '@/components/DocumentsTable'
+import { useTranslation } from '@/hooks/useTranslation'
 import { HealthRecord } from '@/types/health'
 import { Upload } from 'lucide-react'
 import {
@@ -23,9 +24,11 @@ export default function DashboardPage() {
 	const router = useRouter()
 	const supabase = createClientComponentClient()
 	const { preferences, loading: prefsLoading, error: prefsError } = usePreferences()
+	const { t } = useTranslation(preferences?.language || 'en')
 	const [documents, setDocuments] = useState<HealthRecord[]>([])
 	const [isLoading, setIsLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
+
 
 	// Check authentication and fetch documents
 	useEffect(() => {
@@ -129,7 +132,7 @@ export default function DashboardPage() {
 			<div className="flex items-center justify-between pb-4">
 				<div className="flex flex-col">
 					<h1 className="text-2xl font-bold">
-						Welcome, {preferences?.display_name || 'User'}
+						{t('dashboard.greeting').replace('{name}', preferences?.display_name || '')}
 					</h1>
 					<h1 className="text-2xl font-light">
 						 this is your Dashboard.

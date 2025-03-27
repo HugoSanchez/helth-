@@ -6,7 +6,6 @@ export function useTranslation(initialLanguage: Language = 'en') {
 
     // Update language when initialLanguage changes
     useEffect(() => {
-        console.log('Language changed to:', initialLanguage)
         setLanguage(initialLanguage)
     }, [initialLanguage])
 

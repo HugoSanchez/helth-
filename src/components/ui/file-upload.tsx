@@ -3,12 +3,14 @@ import { useCallback, useState } from "react"
 import { cn } from "@/lib/client/utils"
 import { Upload } from "lucide-react"
 import { Button } from "./button"
+import { useTranslation } from "@/hooks/useTranslation"
 
 interface FileUploadProps extends React.HTMLAttributes<HTMLDivElement> {
     onFileSelect: (file: File) => void
     accept?: string
     maxSize?: number // in bytes
     disabled?: boolean
+    message?: string
 }
 
 export function FileUpload({
@@ -17,8 +19,10 @@ export function FileUpload({
     accept = "application/pdf",
     maxSize = 10 * 1024 * 1024, // 10MB default
     disabled = false,
+    message,
     ...props
 }: FileUploadProps) {
+    const { t } = useTranslation()
     const [isDragging, setIsDragging] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const fileInputRef = React.useRef<HTMLInputElement>(null)
@@ -28,17 +32,17 @@ export function FileUpload({
         setError(null)
 
         if (!file.type.match(accept)) {
-            setError("Please upload a PDF file")
+            setError(t('fileUpload.errors.pdfOnly'))
             return
         }
 
         if (file.size > maxSize) {
-            setError("File is too large. Maximum size is 10MB")
+            setError(t('fileUpload.errors.tooLarge'))
             return
         }
 
         onFileSelect(file)
-    }, [accept, maxSize, onFileSelect, disabled])
+    }, [accept, maxSize, onFileSelect, disabled, t])
 
     const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault()
@@ -99,23 +103,30 @@ export function FileUpload({
                 disabled={disabled}
             />
 
-            <Upload className="w-10 h-10 mb-4 text-muted-foreground" />
+            <Upload className="w-10 h-10 mb-4 text-black" />
+
+            {message && (
+                <p className="text-xl font-serif font-bold mb-2">
+                    {message}
+                </p>
+            )}
+
             <div className="space-y-2 text-center">
-                <p className="text-sm text-muted-foreground">
-                    <span className="font-semibold">Click to upload</span> or drag and drop
+                <p className="text-sm text-muted-foreground font-light">
+                    {t('fileUpload.dragDrop')}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                    PDF (up to 10MB)
+                    {t('fileUpload.fileSize')}
                 </p>
             </div>
 
             <Button
-                variant="secondary"
+                variant="default"
                 className="mt-4"
                 onClick={handleClick}
                 disabled={disabled}
             >
-                Browse Files
+                {t('common.browse')}
             </Button>
 
             {error && (
