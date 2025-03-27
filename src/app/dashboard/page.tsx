@@ -86,7 +86,9 @@ export default function DashboardPage() {
 					</h1>
 				</div>
 				<div>
-					<Button onClick={() => document.getElementById('fileInput')?.click()}>
+					<Button
+						onClick={() => document.getElementById('fileInput')?.click()}
+					>
 						<Upload className="mr-2 h-4 w-4" />
 						{t('common.upload')}
 					</Button>

@@ -2,32 +2,40 @@
 
 import { useState } from 'react'
 import { Card } from "@/components/ui/card"
-import { usePreferences } from '@/hooks/usePreferences'
+import { usePreferences, type Preferences } from '@/hooks/usePreferences'
 import { Breadcrumb, type BreadcrumbStep } from '@/components/ui/breadcrumb'
 import { useTranslation } from '@/hooks/useTranslation'
 import { PreferencesStep } from '@/components/setup/PreferencesStep'
 import { ConnectStep } from '@/components/setup/ConnectStep'
+import { ReadyStep } from '@/components/setup/ReadyStep'
 
 export default function SettingsPage() {
-    const { preferences, loading: prefsLoading, error: prefsError } = usePreferences()
+    const { preferences: initialPreferences, loading: prefsLoading, error: prefsError } = usePreferences()
     const [currentStep, setCurrentStep] = useState(1)
-    const { t } = useTranslation(preferences?.language || 'en')
+    const [preferences, setPreferences] = useState<Preferences | null>(null)
+    const { t } = useTranslation(preferences?.language || initialPreferences?.language || 'en')
+
+    // Initialize preferences when they're first loaded
+    if (!preferences && initialPreferences) {
+        setPreferences(initialPreferences)
+    }
 
     const steps: BreadcrumbStep[] = [
         {
             label: t('setup.steps.preferences'),
             active: currentStep === 1,
             completed: currentStep > 1,
-            onClick: currentStep === 2 ? () => setCurrentStep(1) : undefined
+            onClick: currentStep > 1 ? () => setCurrentStep(1) : undefined
         },
         {
             label: t('setup.steps.connect'),
             active: currentStep === 2,
-            completed: currentStep > 2
+            completed: currentStep > 2,
+            onClick: currentStep === 3 ? () => setCurrentStep(2) : undefined
         },
         {
             label: t('setup.steps.ready'),
-            active: false,
+            active: currentStep === 3,
             completed: false
         }
     ]
@@ -53,6 +61,10 @@ export default function SettingsPage() {
         )
     }
 
+    const handlePreferencesUpdate = (newPreferences: Preferences) => {
+        setPreferences(newPreferences)
+    }
+
     return (
         <main className="flex justify-center min-h-screen py-10">
             <Card className="w-[600px]">
@@ -64,9 +76,17 @@ export default function SettingsPage() {
                     <PreferencesStep
                         onComplete={() => setCurrentStep(2)}
                         initialPreferences={preferences}
+                        onPreferencesUpdate={handlePreferencesUpdate}
+                    />
+                ) : currentStep === 2 ? (
+                    <ConnectStep
+                        onComplete={() => setCurrentStep(3)}
+                        preferences={preferences}
                     />
                 ) : (
-                    <ConnectStep />
+                    <ReadyStep
+                        preferences={preferences}
+                    />
                 )}
             </Card>
         </main>

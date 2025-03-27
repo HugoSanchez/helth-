@@ -3,9 +3,9 @@ import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useTranslation } from '@/hooks/useTranslation'
-import { usePreferences } from '@/hooks/usePreferences'
 import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/client/utils'
+import type { Preferences } from '@/hooks/usePreferences'
 
 function GoogleLogo() {
     return (
@@ -30,11 +30,24 @@ function GoogleLogo() {
     )
 }
 
-export function ConnectStep() {
+interface ConnectStepProps {
+    onComplete: () => void
+    preferences: Preferences | null
+}
+
+export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
     const router = useRouter()
-    const { preferences } = usePreferences()
     const { t } = useTranslation(preferences?.language || 'en')
     const [isExpanded, setIsExpanded] = useState(false)
+
+    const handleConnect = () => {
+        router.push('/dashboard')
+        onComplete()
+    }
+
+    const handleSkip = () => {
+        onComplete()
+    }
 
     return (
         <>
@@ -74,7 +87,7 @@ export function ConnectStep() {
 
                     <Button
                         className="w-full h-12 gap-4"
-                        onClick={() => router.push('/dashboard')}
+                        onClick={handleConnect}
                     >
                         <GoogleLogo />
                         {t('dashboard.scanButton')}
@@ -83,7 +96,7 @@ export function ConnectStep() {
                     <div>
                         <Button
                             variant="link"
-                            onClick={() => router.push('/dashboard')}
+                            onClick={handleSkip}
                             className="w-full font-serif font-light justify-start p-0"
                         >
                             {t('common.skip')}

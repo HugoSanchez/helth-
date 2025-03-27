@@ -21,7 +21,7 @@ export function Header() {
 	return (
 		<header className="">
 			<div className="px-4 sm:px-6 lg:px-16 h-14 flex items-center justify-between">
-				<h1 className="text-xl font-bold font-serif">helz.</h1>
+				<h1 className="text-xl font-bold font-serif tracking-wide">momo<span className="">.</span></h1>
 				<DropdownMenu>
 				<DropdownMenuTrigger>
 					<Menu className="h-5 w-5 text-muted-foreground" />

@@ -20,7 +20,7 @@ export const translations = {
             steps: {
                 preferences: "Preferences",
                 connect: "Connect Gmail",
-                ready: "Ready!"
+                ready: "Upload a file"
             },
             connect: {
                 title: "Connect your Gmail",
@@ -36,7 +36,11 @@ export const translations = {
                         "Secure and private - we only access medical-related emails and we only store the documents you asks us to keep"
                     ]
                 }
-            }
+            },
+			upload:{
+				title: "Upload your first file",
+				description: "Lets upload your first file. Remember we only support PDF files for now."
+			},
         },
         dashboard: {
             greeting: "Hi {name},",
@@ -117,7 +121,7 @@ export const translations = {
             steps: {
                 preferences: "Preferencias",
                 connect: "Conecta Gmail",
-                ready: "¡Listo!"
+                ready: "Sube un archivo"
             },
             connect: {
                 title: "Conecta tu Gmail",
@@ -132,7 +136,11 @@ export const translations = {
 						"Encuentramos automáticamente documentos médicos en tu bandeja de entrada sin que tengas que hacer nada.",
                     ]
                 }
-            }
+            },
+			upload:{
+				title: "Sube tu primer archivo",
+				description: "Prueba a subir un primer archivo. Recuerda que solo aceptamos el formato PDF por el momento."
+			},
         },
         dashboard: {
             greeting: "Hola {name},",

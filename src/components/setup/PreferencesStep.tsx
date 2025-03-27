@@ -9,9 +9,10 @@ import { usePreferences, type Preferences } from '@/hooks/usePreferences'
 interface PreferencesStepProps {
     onComplete: () => void
     initialPreferences: Preferences | null
+    onPreferencesUpdate?: (newPreferences: Preferences) => void
 }
 
-export function PreferencesStep({ onComplete, initialPreferences }: PreferencesStepProps) {
+export function PreferencesStep({ onComplete, initialPreferences, onPreferencesUpdate }: PreferencesStepProps) {
     const { updatePreferences } = usePreferences()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -38,11 +39,15 @@ export function PreferencesStep({ onComplete, initialPreferences }: PreferencesS
         setError(null)
 
         try {
-            await updatePreferences({
+            const newPreferences = {
                 display_name: formData.display_name,
                 language: formData.language,
-            })
+            }
 
+            await updatePreferences(newPreferences)
+
+            // Notify parent component of the update
+            onPreferencesUpdate?.(newPreferences as Preferences)
             onComplete()
         } catch (err) {
             console.error('Setup error:', err)
