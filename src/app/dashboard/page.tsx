@@ -74,17 +74,6 @@ export default function DashboardPage() {
 		)
 	}
 
-	if (prefsError || error) {
-		return (
-			<main className="flex items-center justify-center min-h-screen">
-				<div className="text-center">
-					<h2 className="text-xl font-semibold mb-2">Error</h2>
-					<p className="text-red-500">{prefsError || error}</p>
-				</div>
-			</main>
-		)
-	}
-
 	return (
 		<main className="py-12 md:px-16">
 			<div className="flex items-center justify-between pb-4">

@@ -33,6 +33,7 @@ import { FileUpload } from "@/components/ui/file-upload"
 import { useTranslation } from "@/hooks/useTranslation"
 import { Language } from '@/lib/translations'
 import { Spinner } from "@/components/ui/spinner"
+import { toast } from "sonner"
 
 const recordTypeConfig = {
     lab_report: { icon: TestTube, label: "documents.types.lab_report", backgroundColor: "" },
@@ -44,7 +45,7 @@ const recordTypeConfig = {
 
 interface DocumentsTableProps {
     documents: HealthRecord[]
-    onFileSelect?: (file: File) => void
+    onFileSelect?: (file: File) => Promise<void>
     language?: Language
 }
 
@@ -84,9 +85,19 @@ export function DocumentsTable({ documents, onFileSelect, language = 'en' }: Doc
     }
 
     const handleFileSelect = async (file: File) => {
+        if (!onFileSelect) return
+
+        setIsUploading(true)
+
+        const promise = onFileSelect(file)
+        toast.promise(promise, {
+            loading: t('documents.upload.loading'),
+            success: t('documents.upload.success'),
+            error: t('documents.upload.error'),
+        })
+
         try {
-            setIsUploading(true)
-            await onFileSelect?.(file)
+            await promise
         } finally {
             setIsUploading(false)
         }

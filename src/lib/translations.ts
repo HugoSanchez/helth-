@@ -80,6 +80,11 @@ export const translations = {
                 imaging: "Imaging",
                 clinical_notes: "Clinical Notes",
                 other: "Other"
+            },
+            upload: {
+                loading: "Uploading document...",
+                success: "Document uploaded successfully",
+                error: "Failed to upload document"
             }
         },
         fileUpload: {
@@ -171,6 +176,11 @@ export const translations = {
                 imaging: "Imagen Médica",
                 clinical_notes: "Notas Clínicas",
                 other: "Otro"
+            },
+            upload: {
+                loading: "Subiendo documento...",
+                success: "Documento subido exitosamente",
+                error: "Error al subir el documento"
             }
         },
         fileUpload: {

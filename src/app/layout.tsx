@@ -3,6 +3,7 @@ import { Roboto_Serif, Roboto_Flex, Work_Sans } from 'next/font/google'
 import './globals.css'
 import SupabaseProvider from '../components/providers/SupabaseProvider'
 import {Header} from '../components/Header'
+import { Toaster } from "@/components/ui/sonner"
 
 const robotoSerif = Roboto_Serif({ subsets: ['latin'], weight: ['200', '300', '400', '500', '600', '700'], variable: '--font-roboto-serif' })
 const robotoFlex = Roboto_Flex({ subsets: ['latin'], weight: ['200', '300', '400', '500', '600', '700'],variable: '--font-roboto-flex' })
@@ -27,6 +28,7 @@ export default function RootLayout({
 				<SupabaseProvider>
 					<Header />
 					{children}
+					<Toaster />
 				</SupabaseProvider>
 			</body>
 		</html>
