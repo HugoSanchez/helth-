@@ -5,6 +5,7 @@ interface DocumentAnalysis {
 	type?: string;
 	doctor_name?: string;
 	date?: string;
+	record_name?: string;
 }
 
 export async function storeDocument(
@@ -14,8 +15,6 @@ export async function storeDocument(
 	analysis?: DocumentAnalysis
 ) {
 	try {
-		console.log('[DB] Starting document storage...');
-		console.log('[DB] Uploading file to storage:', fileName);
 
 		// First, store the file in storage
 		const filePath = `${userId}/${fileName}`;
@@ -38,15 +37,13 @@ export async function storeDocument(
 			.from('health_documents')
 			.getPublicUrl(filePath);
 
-		console.log('[DB] File uploaded successfully, creating database record');
-
 		// Then create the record in the database
 		const { data: record, error: dbError } = await supabaseAdmin
 			.from('health_records')
 			.insert([
 				{
 					user_id: userId,
-					record_name: fileName,
+					record_name: analysis?.record_name || fileName,
 					record_type: analysis?.type || 'other',
 					doctor_name: analysis?.doctor_name || 'Unknown',
 					date: analysis?.date || 'Unknown',

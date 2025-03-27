@@ -43,6 +43,20 @@ export async function POST(req: Request) {
             )
         }
 
+        // Get user's language preference
+        const { data: preferences, error: preferencesError } = await supabase
+            .from('user_preferences')
+            .select('language')
+            .eq('user_id', user.id)
+            .single()
+
+        if (preferencesError) {
+            console.error('[Analyze] Error fetching preferences:', preferencesError)
+            // Continue with English as fallback
+        }
+
+        const userLanguage = preferences?.language || 'en'
+
         // Get and validate the form data
         const formData = await req.formData()
         const file = formData.get('file') as File
@@ -57,23 +71,15 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Only PDF files are supported' }, { status: 400 })
         }
 
-        console.log('[Analyze] Processing file:', file.name)
-
         // Convert file to buffer and base64
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
         const base64Pdf = buffer.toString('base64')
 
         // Analyze document with Claude
-        console.log('[Analyze] Starting Claude analysis...')
-        const analysis = await analyzeDocument(base64Pdf)
-        console.log('[Analyze] Analysis complete:', analysis)
-
+        const analysis = await analyzeDocument(base64Pdf, userLanguage)
         // Store document in Supabase
-        console.log('[Analyze] Storing document...')
         const storedDoc = await storeDocument(user.id, file.name, buffer, analysis)
-        console.log('[Analyze] Document stored successfully:', storedDoc)
-
         // Return the analysis results
         return NextResponse.json({
             success: true,
