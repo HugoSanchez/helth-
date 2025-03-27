@@ -28,6 +28,7 @@ export const config = {
  */
 export async function POST(req: Request) {
     try {
+        console.log('[Analyze] Starting document analysis...');
         const cookieStore = cookies()
         const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
         const { data: { user }, error: authError } = await supabase.auth.getUser()
 
         if (authError || !user) {
-            console.error('Auth error:', authError)
+            console.error('[Analyze] Auth error:', authError)
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
@@ -47,12 +48,16 @@ export async function POST(req: Request) {
         const file = formData.get('file') as File
 
         if (!file) {
+            console.error('[Analyze] No file provided')
             return NextResponse.json({ error: 'No file provided' }, { status: 400 })
         }
 
         if (!file.type.includes('pdf')) {
+            console.error('[Analyze] Invalid file type:', file.type)
             return NextResponse.json({ error: 'Only PDF files are supported' }, { status: 400 })
         }
+
+        console.log('[Analyze] Processing file:', file.name)
 
         // Convert file to buffer and base64
         const bytes = await file.arrayBuffer()
@@ -60,22 +65,25 @@ export async function POST(req: Request) {
         const base64Pdf = buffer.toString('base64')
 
         // Analyze document with Claude
-        console.log('[Claude] Analyzing document...')
+        console.log('[Analyze] Starting Claude analysis...')
         const analysis = await analyzeDocument(base64Pdf)
+        console.log('[Analyze] Analysis complete:', analysis)
 
         // Store document in Supabase
-        console.log('[Claude] Storing document...', analysis)
-        await storeDocument(user.id, file.name, buffer)
+        console.log('[Analyze] Storing document...')
+        const storedDoc = await storeDocument(user.id, file.name, buffer, analysis)
+        console.log('[Analyze] Document stored successfully:', storedDoc)
 
         // Return the analysis results
         return NextResponse.json({
             success: true,
             analysis,
+            document: storedDoc,
             message: "Document analyzed successfully"
         })
 
     } catch (error) {
-        console.error('Error analyzing document:', error)
+        console.error('[Analyze] Error processing document:', error)
         return NextResponse.json(
             { error: error instanceof Error ? error.message : 'Internal server error' },
             { status: error instanceof Error && error.message.includes('Unauthorized') ? 401 : 500 }
