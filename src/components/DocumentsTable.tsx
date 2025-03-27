@@ -193,7 +193,7 @@ export function DocumentsTable({ documents, onFileSelect, language = 'en' }: Doc
                                             <Checkbox
                                                 checked={selectedRows.includes(doc.id)}
                                                 onCheckedChange={() => toggleRow(doc.id)}
-                                                aria-label={t('documents.table.selectDocument').replace('{name}', doc.record_name)}
+                                                aria-label={t('documents.table.selectDocument').replace('{name}', doc.display_name)}
                                             />
                                         </TableCell>
                                         <TableCell className="p-0">
@@ -212,7 +212,8 @@ export function DocumentsTable({ documents, onFileSelect, language = 'en' }: Doc
                                             </Button>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="font-medium">{doc.record_name}</div>
+                                            <div className="font-medium">{doc.display_name}</div>
+                                            <div className="text-xs text-muted-foreground">{doc.record_name}</div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">

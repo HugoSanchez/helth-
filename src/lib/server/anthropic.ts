@@ -40,7 +40,11 @@ export async function analyzeDocument(base64Pdf: string, language: string = 'en'
                         },
                         record_name: {
                             type: "string",
-                            description: "A descriptive name for the record"
+                            description: "A clean, system-friendly filename for storage"
+                        },
+                        display_name: {
+                            type: "string",
+                            description: "A human-readable, descriptive name in the user's language"
                         },
                         summary: {
                             type: "string",
@@ -55,7 +59,7 @@ export async function analyzeDocument(base64Pdf: string, language: string = 'en'
                             description: "The document date in ISO format (YYYY-MM-DD), if present"
                         }
                     },
-                    required: ["record_type", "record_name", "summary"]
+                    required: ["record_type", "record_name", "display_name", "summary"]
                 }
             }],
             messages: [
@@ -85,19 +89,39 @@ export async function analyzeDocument(base64Pdf: string, language: string = 'en'
 								  - EKG
 								  - EEG
 
-                                Provide the summary in ${language}. Make sure to use appropriate medical terminology in the target language.
+                                Keep record_type and record_subtype in English for consistency.
 
-								For the record_name field, generate a clean, descriptive filename that:
-									1. Describes the type and key information (e.g., "blood-work" for a CBC, "chest-xray" for imaging)
+                                Provide the summary and display_name in ${language}. Make sure to use appropriate medical terminology in the target language.
+
+								For the record_name field (used for storage), generate a clean filename that:
+									1. Describes the type and key information (e.g., "blood-work" for a CBC)
 									2. Uses only lowercase letters, numbers, and hyphens
 									3. Does not include special characters or spaces
 									4. Ends with .pdf
 
-								Example good names:
-									- blood-work.pdf
-									- chest-xray.pdf
-									- metformin.pdf
-									- cardiology-notes.pdf
+									Example record_names:
+									- blood-work-march-2024.pdf
+									- chest-xray-2024.pdf
+									- metformin-prescription.pdf
+									- cardiology-notes-march-2024.pdf
+
+                                For the display_name field (shown to users), create a descriptive name that:
+                                    1. Is very short and in the user's language (${language})
+                                    2. Includes the type of document (bloodwork, xray, etc)
+                                    3. Can include spaces and proper capitalization
+                                    4. Is very short, only key words
+
+									Example display_names in English:
+									- Blood Count Results
+									- Chest X-Ray Report
+									- Metformin Prescription
+									- Cardiology Consultation Notes
+
+                                Example display_names in Spanish:
+                                - Resultados del Análisis de Sangre Completo - Marzo 2024
+                                - Radiografía de Tórax
+                                - Receta de Metformina - Dr. Smith
+                                - Notas de Consulta Cardiológica
 
 								Please only return the JSON object, nothing else.`
                         },

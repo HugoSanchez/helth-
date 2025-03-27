@@ -7,6 +7,7 @@ interface DocumentAnalysis {
 	doctor_name?: string;
 	date?: string;
 	record_name?: string;
+	display_name?: string;
 }
 
 export async function storeDocument(
@@ -20,7 +21,7 @@ export async function storeDocument(
 		const filePath = `${userId}/${fileName}`;
 		const { data: fileData, error: uploadError } = await supabaseAdmin
 			.storage
-			.from('health_records')
+			.from('health_documents')
 			.upload(filePath, fileBuffer, {
 				contentType: 'application/pdf',
 				upsert: true
@@ -34,7 +35,7 @@ export async function storeDocument(
 		// Get the public URL for the file
 		const { data: { publicUrl } } = supabaseAdmin
 			.storage
-			.from('health_records')
+			.from('health_documents')
 			.getPublicUrl(filePath);
 
 		// Then create the record in the database
@@ -44,6 +45,7 @@ export async function storeDocument(
 				{
 					user_id: userId,
 					record_name: analysis?.record_name || fileName,
+					display_name: analysis?.display_name || analysis?.record_name || fileName,
 					record_type: analysis?.type || 'other',
 					record_subtype: analysis?.record_subtype || null,
 					doctor_name: analysis?.doctor_name || null,
