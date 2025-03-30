@@ -34,6 +34,7 @@ import { useTranslation } from "@/hooks/useTranslation"
 import { Language } from '@/lib/translations'
 import { Spinner } from "@/components/ui/spinner"
 import { toast } from "sonner"
+import { cn } from "@/lib/client/utils"
 
 const recordTypeConfig = {
     lab_report: { icon: TestTube, label: "documents.types.lab_report", backgroundColor: "" },
@@ -172,13 +173,13 @@ export function DocumentsTable({ documents, onFileSelect, language = 'en' }: Doc
                                     checked={selectedRows.length === documents.length}
                                     onCheckedChange={toggleAll}
                                     aria-label={t('documents.table.selectAll')}
+                                    className="h-3.5 w-3.5"
                                 />
                             </TableHead>
-                            <TableHead className="w-[30px]"></TableHead>
-                            <TableHead>{t('documents.table.name')}</TableHead>
-                            <TableHead>{t('documents.table.type')}</TableHead>
-                            <TableHead className="hidden md:table-cell">{t('documents.table.doctor')}</TableHead>
-                            <TableHead className="hidden md:table-cell">{t('documents.table.date')}</TableHead>
+                            <TableHead className="w-[300px]">{t('documents.table.name')}</TableHead>
+                            <TableHead className="w-[200px]">{t('documents.table.type')}</TableHead>
+                            <TableHead className="hidden md:table-cell w-[200px]">{t('documents.table.doctor')}</TableHead>
+                            <TableHead className="hidden md:table-cell w-[150px]">{t('documents.table.date')}</TableHead>
                             <TableHead className="w-[70px] text-right">{t('documents.table.actions')}</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -188,32 +189,39 @@ export function DocumentsTable({ documents, onFileSelect, language = 'en' }: Doc
                             const isExpanded = expandedRows.includes(doc.id);
                             return (
                                 <>
-                                    <TableRow key={doc.id} data-state={selectedRows.includes(doc.id) ? "selected" : undefined}>
-                                        <TableCell>
+                                    <TableRow
+                                        key={doc.id}
+                                        data-state={selectedRows.includes(doc.id) ? "selected" : undefined}
+                                        onClick={(e) => {
+                                            // Don't toggle if clicking on checkbox or action buttons
+                                            if (
+                                                e.target instanceof HTMLElement &&
+                                                (e.target.closest('button') || e.target.closest('input'))
+                                            ) {
+                                                return;
+                                            }
+                                            if (doc.summary) {
+                                                toggleExpand(doc.id);
+                                            }
+                                        }}
+                                        className={cn(
+                                            "cursor-pointer transition-colors",
+                                            doc.summary ? "hover:bg-muted/50" : "",
+                                            !doc.summary && "cursor-default"
+                                        )}
+                                    >
+                                        <TableCell onClick={(e) => e.stopPropagation()}>
                                             <Checkbox
                                                 checked={selectedRows.includes(doc.id)}
                                                 onCheckedChange={() => toggleRow(doc.id)}
                                                 aria-label={t('documents.table.selectDocument').replace('{name}', doc.display_name)}
+                                                className="h-3.5 w-3.5"
                                             />
                                         </TableCell>
-                                        <TableCell className="p-0">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => toggleExpand(doc.id)}
-                                                className={`h-8 w-8 ${!doc.summary ? 'opacity-50' : ''}`}
-                                                disabled={!doc.summary}
-                                            >
-                                                {isExpanded ? (
-                                                    <ChevronDown className="h-4 w-4" />
-                                                ) : (
-                                                    <ChevronRight className="h-4 w-4" />
-                                                )}
-                                            </Button>
-                                        </TableCell>
                                         <TableCell>
-                                            <div className="font-medium">{doc.display_name}</div>
-                                            <div className="text-xs text-muted-foreground">{doc.record_name}</div>
+                                            <div className="font-medium">
+                                                {doc.display_name}
+                                            </div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
