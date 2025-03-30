@@ -127,7 +127,7 @@ export function DocumentsTable({ documents, onFileSelect, language = 'en' }: Doc
     }
 
     return (
-        <Card className="xl:col-span-2">
+        <Card className="xl:col-span-2 bg-muted/10 border border-border rounded-lg">
             <CardHeader className="flex flex-row items-center">
                 <div className="grid gap-2">
                     <CardTitle>{t('documents.title')}</CardTitle>
@@ -147,7 +147,6 @@ export function DocumentsTable({ documents, onFileSelect, language = 'en' }: Doc
                         ) : (
                             <Upload className="h-4 w-4 mr-2" />
                         )}
-                        {t('common.upload')}
                     </Button>
                 )}
                 <input

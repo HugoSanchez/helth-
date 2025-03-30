@@ -20,7 +20,7 @@
 
 @layer base {
 	:root {
-		--background: 51.4 25.9% 94.7%; /* Light Beige */
+		--background: 42 33% 96%; /* Light Beige */
 		--foreground: 60.0 2.0% 19.6%; /* Dark Gray Text */
 
 		--card: 42 25% 92%; /* Soft Beige */
