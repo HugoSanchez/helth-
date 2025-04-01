@@ -13,7 +13,8 @@ import {
 	AvatarFallback,
 	AvatarImage
 } from '@/components/ui/avatar'
-import { fetchUserDocuments, analyzeDocument, APIError } from '@/lib/api/documents'
+import { fetchUserDocuments, analyzeDocument, deleteDocuments, APIError } from '@/lib/api/documents'
+import { toast } from "sonner"
 
 export default function DashboardPage() {
 	const { preferences, loading: prefsLoading, error: prefsError } = usePreferences()
@@ -66,6 +67,27 @@ export default function DashboardPage() {
 		}
 	}
 
+	const handleDelete = async (recordIds: string[]) => {
+		const promise = (async () => {
+			await deleteDocuments(recordIds)
+			const newDocs = await fetchUserDocuments()
+			setDocuments(newDocs)
+		})()
+
+		toast.promise(promise, {
+			loading: t('documents.delete.loading'),
+			success: t('documents.delete.success'),
+			error: t('documents.delete.error')
+		})
+
+		try {
+			await promise
+		} catch (err) {
+			console.error('Error deleting documents:', err)
+			throw err
+		}
+	}
+
 	if (prefsLoading || isLoading) {
 		return (
 			<main className="flex items-center justify-center min-h-screen">
@@ -100,6 +122,7 @@ export default function DashboardPage() {
 					<DocumentsTable
 						documents={documents}
 						onFileSelect={handleFileSelect}
+						onDeleteRecords={handleDelete}
 						language={preferences?.language || 'en'}
 					/>
 				</div>

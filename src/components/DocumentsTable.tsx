@@ -14,6 +14,7 @@ import {
     ChevronDown,
     ChevronRight,
     Upload,
+    Trash2,
     X
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -47,10 +48,11 @@ const recordTypeConfig = {
 interface DocumentsTableProps {
     documents: HealthRecord[]
     onFileSelect?: (file: File) => Promise<void>
+    onDeleteRecords?: (ids: string[]) => Promise<void>
     language?: Language
 }
 
-export function DocumentsTable({ documents, onFileSelect, language = 'en' }: DocumentsTableProps) {
+export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, language = 'en' }: DocumentsTableProps) {
     const { t } = useTranslation(language)
     const [selectedRows, setSelectedRows] = useState<string[]>([])
     const [expandedRows, setExpandedRows] = useState<string[]>([])
@@ -104,6 +106,18 @@ export function DocumentsTable({ documents, onFileSelect, language = 'en' }: Doc
         }
     }
 
+    const handleDelete = async () => {
+        if (!onDeleteRecords || selectedRows.length === 0) return;
+
+        try {
+            await onDeleteRecords(selectedRows);
+            setSelectedRows([]); // Clear selection after successful deletion
+        } catch (error) {
+            console.error('Error deleting records:', error);
+            // Error will be handled by the toast in the parent component
+        }
+    }
+
     if (documents.length === 0) {
         return (
             <Card className="xl:col-span-2">
@@ -135,20 +149,33 @@ export function DocumentsTable({ documents, onFileSelect, language = 'en' }: Doc
                         {t('documents.description')}
                     </CardDescription>
                 </div>
-                {onFileSelect && (
+                <div className="flex items-center gap-2 ml-auto">
                     <Button
                         size="sm"
-                        className="gap-1 ml-auto"
-                        onClick={() => document.getElementById('fileInput')?.click()}
-                        disabled={isUploading}
+                        variant={selectedRows.length > 0 ? "destructive" : "outline"}
+                        className="h-8 w-8 p-0"
+                        onClick={handleDelete}
+                        disabled={selectedRows.length === 0}
                     >
-                        {isUploading ? (
-                            <Spinner size="sm" className="mr-2" />
-                        ) : (
-                            <Upload className="h-4 w-4 mr-2" />
-                        )}
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">{t('common.delete')}</span>
                     </Button>
-                )}
+                    {onFileSelect && (
+                        <Button
+                            size="sm"
+                            className="gap-1"
+                            onClick={() => document.getElementById('fileInput')?.click()}
+                            disabled={isUploading}
+                        >
+                            {isUploading ? (
+                                <Spinner size="sm" className="mr-2" />
+                            ) : (
+                                <Upload className="h-4 w-4 mr-2" />
+                            )}
+                            {t('common.upload')}
+                        </Button>
+                    )}
+                </div>
                 <input
                     id="fileInput"
                     type="file"

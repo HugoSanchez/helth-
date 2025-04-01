@@ -89,6 +89,11 @@ export const translations = {
                 loading: "Uploading document...",
                 success: "Document uploaded successfully",
                 error: "Failed to upload document"
+            },
+            delete: {
+                loading: "Deleting documents...",
+                success: "Documents deleted successfully",
+                error: "Failed to delete documents"
             }
         },
         fileUpload: {
@@ -189,6 +194,11 @@ export const translations = {
                 loading: "Subiendo documento...",
                 success: "Documento subido exitosamente",
                 error: "Error al subir el documento"
+            },
+            delete: {
+                loading: "Eliminando documentos...",
+                success: "Documentos eliminados exitosamente",
+                error: "Error al eliminar documentos"
             }
         },
         fileUpload: {

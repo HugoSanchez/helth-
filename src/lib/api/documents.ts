@@ -53,3 +53,25 @@ export async function analyzeDocument(file: File): Promise<any> {
 
     return data
 }
+
+export async function deleteDocuments(recordIds: string[]): Promise<void> {
+    const response = await fetch('/api/documents', {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ recordIds }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new APIError(
+            data.error || 'Failed to delete documents',
+            response.status,
+            response.status === 401
+        );
+    }
+
+    return data;
+}
