@@ -15,6 +15,7 @@ import {
     ChevronRight,
     Upload,
     Trash2,
+    Pencil,
     X
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -36,6 +37,11 @@ import { Language } from '@/lib/translations'
 import { Spinner } from "@/components/ui/spinner"
 import { toast } from "sonner"
 import { cn } from "@/lib/client/utils"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { updateDocument } from '@/lib/api/documents'
 
 const recordTypeConfig = {
     lab_report: { icon: TestTube, label: "documents.types.lab_report", backgroundColor: "" },
@@ -57,6 +63,7 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
     const [selectedRows, setSelectedRows] = useState<string[]>([])
     const [expandedRows, setExpandedRows] = useState<string[]>([])
     const [isUploading, setIsUploading] = useState(false)
+    const [editingRecord, setEditingRecord] = useState<HealthRecord | null>(null)
 
     const toggleAll = () => {
         if (selectedRows.length === documents.length) {
@@ -115,6 +122,48 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
         } catch (error) {
             console.error('Error deleting records:', error);
             // Error will be handled by the toast in the parent component
+        }
+    }
+
+    const handleEdit = (record: HealthRecord) => {
+        setEditingRecord(record)
+    }
+
+    const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        if (!editingRecord) return
+
+        const formData = new FormData(e.currentTarget)
+        const updates = {
+            display_name: formData.get('display_name') as string,
+            record_type: formData.get('record_type') as HealthRecord['record_type'],
+            doctor_name: formData.get('doctor_name') as string || undefined,
+            date: formData.get('date') as string || undefined
+        }
+
+        const promise = updateDocument(editingRecord.id, updates)
+
+        toast.promise(promise, {
+            loading: t('documents.edit.loading'),
+            success: t('documents.edit.success'),
+            error: t('documents.edit.error'),
+        })
+
+        try {
+            await promise
+            setEditingRecord(null)
+            // Refresh the documents list
+            const updatedDoc = { ...editingRecord, ...updates }
+            const updatedDocs = documents.map(doc =>
+                doc.id === editingRecord.id ? updatedDoc : doc
+            )
+            // Update the documents array with the new data
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('documents-updated', { detail: updatedDocs }))
+            }
+        } catch (error) {
+            console.error('Error updating document:', error)
+            // Error will be handled by the toast
         }
     }
 
@@ -222,7 +271,7 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                                             // Don't toggle if clicking on checkbox or action buttons
                                             if (
                                                 e.target instanceof HTMLElement &&
-                                                (e.target.closest('button') || e.target.closest('input'))
+                                                (e.target.closest('button') || e.target.closest('input') || e.target.closest('[role="menuitem"]'))
                                             ) {
                                                 return;
                                             }
@@ -275,6 +324,13 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem
+                                                        onClick={() => handleEdit(doc)}
+                                                        className="flex items-center"
+                                                    >
+                                                        <Pencil className="mr-2 h-4 w-4" />
+                                                        {t('documents.table.edit')}
+                                                    </DropdownMenuItem>
                                                     {doc.file_url && (
                                                         <>
                                                             <DropdownMenuItem asChild>
@@ -327,6 +383,81 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                     </TableBody>
                 </Table>
             </CardContent>
+            <Sheet open={editingRecord !== null} onOpenChange={() => setEditingRecord(null)}>
+                <SheetContent>
+                    <SheetHeader>
+                        <SheetTitle>{t('documents.edit.title')}</SheetTitle>
+                    </SheetHeader>
+                    <form onSubmit={handleEditSubmit} className="space-y-6">
+                        <div className="space-y-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="display_name">{t('documents.table.name')}</Label>
+                                <Input
+                                    id="display_name"
+                                    name="display_name"
+                                    defaultValue={editingRecord?.display_name}
+                                    required
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="record_type">{t('documents.table.type')}</Label>
+                                <Select
+                                    name="record_type"
+                                    defaultValue={editingRecord?.record_type}
+                                    required
+                                >
+                                    <SelectTrigger id="record_type">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {Object.entries(recordTypeConfig).map(([value, config]) => (
+                                            <SelectItem key={value} value={value}>
+                                                <div className="flex items-center gap-2">
+                                                    <config.icon className="h-4 w-4" />
+                                                    {t(config.label)}
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="doctor_name">{t('documents.table.doctor')}</Label>
+                                <Input
+                                    id="doctor_name"
+                                    name="doctor_name"
+                                    defaultValue={editingRecord?.doctor_name || ''}
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="date">{t('documents.table.date')}</Label>
+                                <Input
+                                    id="date"
+                                    name="date"
+                                    type="date"
+                                    defaultValue={editingRecord?.date ? new Date(editingRecord.date).toISOString().split('T')[0] : ''}
+                                />
+                            </div>
+                        </div>
+
+                        <SheetFooter>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setEditingRecord(null)}
+                            >
+                                {t('documents.edit.cancel')}
+                            </Button>
+                            <Button type="submit">
+                                {t('documents.edit.save')}
+                            </Button>
+                        </SheetFooter>
+                    </form>
+                </SheetContent>
+            </Sheet>
         </Card>
     )
 }

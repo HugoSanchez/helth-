@@ -76,7 +76,16 @@ export const translations = {
                 noDate: "No date",
                 viewDocument: "View document",
                 download: "Download",
-                share: "Share"
+                share: "Share",
+                edit: "Edit"
+            },
+            edit: {
+                title: "Edit document details",
+                save: "Save changes",
+                cancel: "Cancel",
+                loading: "Updating document...",
+                success: "Document updated successfully",
+                error: "Failed to update document"
             },
             types: {
                 lab_report: "Lab Report",
@@ -181,7 +190,16 @@ export const translations = {
                 noDate: "Sin fecha",
                 viewDocument: "Ver documento",
                 download: "Descargar",
-                share: "Compartir"
+                share: "Compartir",
+                edit: "Editar"
+            },
+            edit: {
+                title: "Editar detalles del documento",
+                save: "Guardar cambios",
+                cancel: "Cancelar",
+                loading: "Actualizando documento...",
+                success: "Documento actualizado exitosamente",
+                error: "Error al actualizar el documento"
             },
             types: {
                 lab_report: "Informe de Laboratorio",

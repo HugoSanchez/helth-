@@ -75,3 +75,25 @@ export async function deleteDocuments(recordIds: string[]): Promise<void> {
 
     return data;
 }
+
+export async function updateDocument(id: string, updates: Partial<HealthRecord>): Promise<HealthRecord> {
+    const response = await fetch(`/api/documents/${id}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new APIError(
+            data.error || 'Failed to update document',
+            response.status,
+            response.status === 401
+        );
+    }
+
+    return data;
+}

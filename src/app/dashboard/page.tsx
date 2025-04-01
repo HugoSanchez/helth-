@@ -47,8 +47,18 @@ export default function DashboardPage() {
 
 		loadDocuments()
 
+		// Listen for document updates
+		const handleDocumentsUpdate = (event: CustomEvent<HealthRecord[]>) => {
+			if (mounted) {
+				setDocuments(event.detail)
+			}
+		}
+
+		window.addEventListener('documents-updated', handleDocumentsUpdate as EventListener)
+
 		return () => {
 			mounted = false
+			window.removeEventListener('documents-updated', handleDocumentsUpdate as EventListener)
 		}
 	}, [])
 
