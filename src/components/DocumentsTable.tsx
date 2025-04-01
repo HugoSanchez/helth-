@@ -94,6 +94,26 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
         console.log('Share document:', id)
     }
 
+    const handleView = async (id: string) => {
+        try {
+            const response = await fetch(`/api/documents/${id}/view`)
+            if (!response.ok) {
+                throw new Error('Failed to get document')
+            }
+
+            const { url } = await response.json()
+            if (!url) {
+                throw new Error('No URL returned')
+            }
+
+            // Open in new tab
+            window.open(url, '_blank', 'noopener,noreferrer')
+        } catch (error) {
+            console.error('Error viewing document:', error)
+            toast.error(t('documents.view.error'))
+        }
+    }
+
     const handleFileSelect = async (file: File) => {
         if (!onFileSelect) return
 
@@ -333,16 +353,12 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                                                     </DropdownMenuItem>
                                                     {doc.file_url && (
                                                         <>
-                                                            <DropdownMenuItem asChild>
-                                                                <Link
-                                                                    href={doc.file_url}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="flex items-center"
-                                                                >
-                                                                    <Eye className="mr-2 h-4 w-4" />
-                                                                    {t('documents.table.viewDocument')}
-                                                                </Link>
+                                                            <DropdownMenuItem
+                                                                onClick={() => handleView(doc.id)}
+                                                                className="flex items-center"
+                                                            >
+                                                                <Eye className="mr-2 h-4 w-4" />
+                                                                {t('documents.table.viewDocument')}
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem asChild>
                                                                 <Link

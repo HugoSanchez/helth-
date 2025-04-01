@@ -103,6 +103,9 @@ export const translations = {
                 loading: "Deleting documents...",
                 success: "Documents deleted successfully",
                 error: "Failed to delete documents"
+            },
+            view: {
+                error: "Failed to open document"
             }
         },
         fileUpload: {
@@ -217,6 +220,9 @@ export const translations = {
                 loading: "Eliminando documentos...",
                 success: "Documentos eliminados exitosamente",
                 error: "Error al eliminar documentos"
+            },
+            view: {
+                error: "Error al abrir el documento"
             }
         },
         fileUpload: {
