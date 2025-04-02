@@ -12,19 +12,24 @@ export async function middleware(req: NextRequest) {
   // Handle authentication for protected routes
   if (!session && (
     req.nextUrl.pathname.startsWith('/dashboard') ||
-    req.nextUrl.pathname.startsWith('/api/') ||
+    (req.nextUrl.pathname.startsWith('/api/') && !req.nextUrl.pathname.startsWith('/api/auth')) ||
     req.nextUrl.pathname.startsWith('/setup') ||
-    req.nextUrl.pathname.startsWith('/settings')
+    req.nextUrl.pathname.startsWith('/settings') ||
+    req.nextUrl.pathname.startsWith('/shared/')
   )) {
     const redirectUrl = new URL('/login', req.url)
+    // If trying to access a shared document, store the URL to redirect back after login
+    if (req.nextUrl.pathname.startsWith('/shared/')) {
+      redirectUrl.searchParams.set('redirect_to', req.nextUrl.pathname)
+    }
     return NextResponse.redirect(redirectUrl)
   }
 
   // If user is signed in and tries to access auth pages, redirect to dashboard
-  if (session && (
-    req.nextUrl.pathname.startsWith('/login')
-  )) {
-    const redirectUrl = new URL('/dashboard', req.url)
+  // But preserve the redirect_to parameter if it exists
+  if (session && req.nextUrl.pathname.startsWith('/login')) {
+    const redirectTo = req.nextUrl.searchParams.get('redirect_to')
+    const redirectUrl = new URL(redirectTo || '/dashboard', req.url)
     return NextResponse.redirect(redirectUrl)
   }
 

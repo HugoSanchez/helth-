@@ -109,6 +109,15 @@ export const translations = {
             },
             download: {
                 error: "Failed to download document"
+            },
+            share: {
+                title: "Share Documents",
+                success: "Share link created successfully",
+                error: "Failed to create share link",
+                copied: "Share link copied to clipboard",
+                button: "Share Selected",
+                single: "Share Document",
+                noDocuments: "Select documents to share"
             }
         },
         fileUpload: {
@@ -229,6 +238,15 @@ export const translations = {
             },
             download: {
                 error: "Error al descargar el documento"
+            },
+            share: {
+                title: "Compartir Documentos",
+                success: "Enlace de compartir creado exitosamente",
+                error: "Error al crear enlace de compartir",
+                copied: "Enlace copiado al portapapeles",
+                button: "Compartir Seleccionados",
+                single: "Compartir Documento",
+                noDocuments: "Selecciona documentos para compartir"
             }
         },
         fileUpload: {

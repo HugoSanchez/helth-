@@ -16,7 +16,8 @@ import {
     Upload,
     Trash2,
     Pencil,
-    X
+    X,
+    Link2
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -89,9 +90,30 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
         }
     }
 
-    const handleShare = (id: string) => {
-        // TODO: Implement sharing functionality
-        console.log('Share document:', id)
+    const handleShare = async (ids: string[]) => {
+        try {
+            const response = await fetch('/api/documents/share', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ documentIds: ids }),
+            })
+
+            if (!response.ok) {
+                const data = await response.json()
+                throw new Error(data.error || 'Failed to create share')
+            }
+
+            const { url } = await response.json()
+
+            // Copy to clipboard
+            await navigator.clipboard.writeText(url)
+            toast.success(t('documents.share.copied'))
+        } catch (error) {
+            console.error('Error sharing documents:', error)
+            toast.error(t('documents.share.error'))
+        }
     }
 
     const handleView = async (id: string) => {
@@ -245,16 +267,29 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                     </CardDescription>
                 </div>
                 <div className="flex items-center gap-2 ml-auto">
-                    <Button
-                        size="sm"
-                        variant={selectedRows.length > 0 ? "destructive" : "outline"}
-                        className="h-8 w-8 p-0"
-                        onClick={handleDelete}
-                        disabled={selectedRows.length === 0}
-                    >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">{t('common.delete')}</span>
-                    </Button>
+                    {selectedRows.length > 0 && (
+                        <>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1"
+                                onClick={() => handleShare(selectedRows)}
+                            >
+                                <Link2 className="h-4 w-4 mr-2" />
+                                {t('documents.share.button')}
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant={selectedRows.length > 0 ? "destructive" : "outline"}
+                                className="h-8 w-8 p-0"
+                                onClick={handleDelete}
+                                disabled={selectedRows.length === 0}
+                            >
+                                <Trash2 className="h-4 w-4" />
+                                <span className="sr-only">{t('common.delete')}</span>
+                            </Button>
+                        </>
+                    )}
                     {onFileSelect && (
                         <Button
                             size="sm"
@@ -396,7 +431,7 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                                                         </>
                                                     )}
                                                     <DropdownMenuItem
-                                                        onClick={() => handleShare(doc.id)}
+                                                        onClick={() => handleShare([doc.id])}
                                                         className="flex items-center"
                                                     >
                                                         <Share2 className="mr-2 h-4 w-4" />
