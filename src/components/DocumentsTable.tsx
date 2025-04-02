@@ -114,6 +114,31 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
         }
     }
 
+    const handleDownload = async (id: string) => {
+        try {
+            const response = await fetch(`/api/documents/${id}/download`)
+            if (!response.ok) {
+                throw new Error('Failed to get download URL')
+            }
+
+            const { url } = await response.json()
+            if (!url) {
+                throw new Error('No URL returned')
+            }
+
+            // Create a temporary link and click it to start the download
+            const link = document.createElement('a')
+            link.href = url
+            link.download = '' // Let the server set the filename
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+        } catch (error) {
+            console.error('Error downloading document:', error)
+            toast.error(t('documents.download.error'))
+        }
+    }
+
     const handleFileSelect = async (file: File) => {
         if (!onFileSelect) return
 
@@ -158,7 +183,8 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
             display_name: formData.get('display_name') as string,
             record_type: formData.get('record_type') as HealthRecord['record_type'],
             doctor_name: formData.get('doctor_name') as string || undefined,
-            date: formData.get('date') as string || undefined
+            date: formData.get('date') as string || undefined,
+            summary: formData.get('summary') as string || undefined
         }
 
         const promise = updateDocument(editingRecord.id, updates)
@@ -301,7 +327,7 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                                         }}
                                         className={cn(
                                             "cursor-pointer transition-colors",
-                                            doc.summary ? "hover:bg-muted/50" : "",
+                                            doc.summary ? "hover:bg-muted/10" : "",
                                             !doc.summary && "cursor-default"
                                         )}
                                     >
@@ -360,15 +386,12 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                                                                 <Eye className="mr-2 h-4 w-4" />
                                                                 {t('documents.table.viewDocument')}
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem asChild>
-                                                                <Link
-                                                                    href={`${doc.file_url}?download=true`}
-                                                                    download
-                                                                    className="flex items-center"
-                                                                >
-                                                                    <Download className="mr-2 h-4 w-4" />
-                                                                    {t('documents.table.download')}
-                                                                </Link>
+                                                            <DropdownMenuItem
+                                                                onClick={() => handleDownload(doc.id)}
+                                                                className="flex items-center"
+                                                            >
+                                                                <Download className="mr-2 h-4 w-4" />
+                                                                {t('documents.table.download')}
                                                             </DropdownMenuItem>
                                                         </>
                                                     )}
@@ -455,6 +478,17 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                                     name="date"
                                     type="date"
                                     defaultValue={editingRecord?.date ? new Date(editingRecord.date).toISOString().split('T')[0] : ''}
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="summary">{t('documents.table.summary')}</Label>
+                                <textarea
+                                    id="summary"
+                                    name="summary"
+                                    className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    defaultValue={editingRecord?.summary || ''}
+                                    placeholder={t('documents.edit.summaryPlaceholder')}
                                 />
                             </div>
                         </div>

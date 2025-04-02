@@ -106,6 +106,9 @@ export const translations = {
             },
             view: {
                 error: "Failed to open document"
+            },
+            download: {
+                error: "Failed to download document"
             }
         },
         fileUpload: {
@@ -223,6 +226,9 @@ export const translations = {
             },
             view: {
                 error: "Error al abrir el documento"
+            },
+            download: {
+                error: "Error al descargar el documento"
             }
         },
         fileUpload: {
