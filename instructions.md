@@ -40,7 +40,7 @@ health_documents:
 
 How we're thinking about sharing records for the moment. Database tables:
 
-1. shared_collections
+1. shared_collection
 
    - id (uuid) -- Unique identifier for the share link
    - owner_id -- User who created the share
@@ -60,7 +60,7 @@ How we're thinking about sharing records for the moment. Database tables:
    - accessed_by_user_id -- Who accessed the share
    - accessed_at -- When it was accessed
 
-shared_collections:
+shared_collection:
 
     - When User A selects documents and clicks "Share", we create one record here
     - This generates a unique ID that becomes part of the share link

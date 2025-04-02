@@ -1,3 +1,4 @@
+import * as React from "react"
 import Link from "next/link"
 import { useState } from "react"
 import {
@@ -344,26 +345,11 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                             const RecordIcon = recordTypeConfig[doc.record_type].icon;
                             const isExpanded = expandedRows.includes(doc.id);
                             return (
-                                <>
+                                <React.Fragment key={doc.id}>
                                     <TableRow
-                                        key={doc.id}
-                                        data-state={selectedRows.includes(doc.id) ? "selected" : undefined}
-                                        onClick={(e) => {
-                                            // Don't toggle if clicking on checkbox or action buttons
-                                            if (
-                                                e.target instanceof HTMLElement &&
-                                                (e.target.closest('button') || e.target.closest('input') || e.target.closest('[role="menuitem"]'))
-                                            ) {
-                                                return;
-                                            }
-                                            if (doc.summary) {
-                                                toggleExpand(doc.id);
-                                            }
-                                        }}
                                         className={cn(
-                                            "cursor-pointer transition-colors",
-                                            doc.summary ? "hover:bg-muted/10" : "",
-                                            !doc.summary && "cursor-default"
+                                            "hover:bg-accent/50",
+                                            isExpanded && "bg-accent/50"
                                         )}
                                     >
                                         <TableCell onClick={(e) => e.stopPropagation()}>
@@ -451,7 +437,7 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                                             </TableCell>
                                         </TableRow>
                                     )}
-                                </>
+                                </React.Fragment>
                             );
                         })}
                     </TableBody>

@@ -21,16 +21,20 @@ export default function SharedDocumentsPage({
     useEffect(() => {
         const loadSharedDocuments = async () => {
             try {
+                console.log('[SharedPage] Loading documents for share:', params.id)
                 const response = await fetch(`/api/shared/${params.id}`)
+
                 if (!response.ok) {
                     const data = await response.json()
+                    console.error('[SharedPage] Error response:', data)
                     throw new Error(data.error || 'Failed to load shared documents')
                 }
 
                 const { documents } = await response.json()
+                console.log('[SharedPage] Loaded documents:', documents?.length || 0)
                 setDocuments(documents)
             } catch (error) {
-                console.error('Error loading shared documents:', error)
+                console.error('[SharedPage] Error:', error)
                 toast.error(error instanceof Error ? error.message : 'Failed to load shared documents')
                 router.push('/dashboard')
             } finally {

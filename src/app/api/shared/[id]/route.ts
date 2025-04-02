@@ -8,29 +8,40 @@ export async function GET(
     { params }: { params: { id: string } }
 ) {
     try {
+        console.log('[Shared] Accessing share with ID:', params.id)
         const cookieStore = cookies()
         const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
         // Get authenticated user
         const { data: { user }, error: authError } = await supabase.auth.getUser()
         if (authError || !user) {
+            console.error('[Shared] Auth error:', authError)
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
             )
         }
 
-        // Check if share exists and hasn't been accessed
-        const { data: collection, error: collectionError } = await supabase
+        // Get the collection and check if it exists and is active
+        const { data: collection, error: collectionError } = await supabaseAdmin
             .from('shared_collection')
-            .select('id, owner_id, is_accessed, is_active')
+            .select('owner_id, is_active')
             .eq('id', params.id)
             .single()
 
         if (collectionError || !collection) {
+            console.error('[Shared] Collection error:', collectionError)
             return NextResponse.json(
                 { error: 'Share not found' },
                 { status: 404 }
+            )
+        }
+
+        // Check if share is active
+        if (!collection.is_active) {
+            return NextResponse.json(
+                { error: 'Share is no longer available' },
+                { status: 403 }
             )
         }
 
@@ -42,16 +53,39 @@ export async function GET(
             )
         }
 
-        // Check if share is still active and hasn't been accessed
-        if (!collection.is_active || collection.is_accessed) {
+        // Check if anyone has claimed this share
+        const { data: accessRecord, error: accessCheckError } = await supabaseAdmin
+            .from('shared_collection_access')
+            .select('accessed_by_user_id')
+            .eq('collection_id', params.id)
+            .single()
+
+        // If no one has claimed it yet, try to claim it
+        if (!accessRecord) {
+            const { error: claimError } = await supabaseAdmin
+                .from('shared_collection_access')
+                .insert({
+                    collection_id: params.id,
+                    accessed_by_user_id: user.id,
+                })
+
+            if (claimError) {
+                console.error('[Shared] Error claiming access:', claimError)
+                return NextResponse.json(
+                    { error: 'Failed to claim access' },
+                    { status: 500 }
+                )
+            }
+        } else if (accessRecord.accessed_by_user_id !== user.id) {
+            // Someone else has already claimed this share
             return NextResponse.json(
-                { error: 'Share is no longer available' },
+                { error: 'This share has already been claimed by another user' },
                 { status: 403 }
             )
         }
 
-        // Get shared documents
-        const { data: documents, error: documentsError } = await supabase
+        // Get the shared documents
+        const { data: documents, error: documentsError } = await supabaseAdmin
             .from('health_records')
             .select(`
                 id,
@@ -63,46 +97,16 @@ export async function GET(
                 summary
             `)
             .in('id', (
-                await supabase
+                await supabaseAdmin
                     .from('shared_collection_documents')
                     .select('document_id')
-                    .eq('collection_id', collection.id)
+                    .eq('collection_id', params.id)
             ).data?.map(d => d.document_id) || [])
 
         if (documentsError) {
-            console.error('Error fetching shared documents:', documentsError)
+            console.error('[Shared] Documents error:', documentsError)
             return NextResponse.json(
                 { error: 'Failed to fetch shared documents' },
-                { status: 500 }
-            )
-        }
-
-        // Record the access
-        const { error: accessError } = await supabase
-            .from('shared_collection_access')
-            .insert({
-                collection_id: collection.id,
-                accessed_by_user_id: user.id,
-            })
-
-        if (accessError) {
-            console.error('Error recording access:', accessError)
-            return NextResponse.json(
-                { error: 'Failed to record access' },
-                { status: 500 }
-            )
-        }
-
-        // Mark collection as accessed
-        const { error: updateError } = await supabase
-            .from('shared_collection')
-            .update({ is_accessed: true })
-            .eq('id', collection.id)
-
-        if (updateError) {
-            console.error('Error updating collection access:', updateError)
-            return NextResponse.json(
-                { error: 'Failed to update share status' },
                 { status: 500 }
             )
         }
@@ -110,7 +114,7 @@ export async function GET(
         return NextResponse.json({ documents })
 
     } catch (error) {
-        console.error('Error accessing share:', error)
+        console.error('[Shared] Unexpected error:', error)
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }
