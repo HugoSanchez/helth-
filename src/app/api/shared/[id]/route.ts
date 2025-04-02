@@ -37,6 +37,18 @@ export async function GET(
             )
         }
 
+        // Get owner's name from preferences
+        const { data: ownerPreferences, error: preferencesError } = await supabaseAdmin
+            .from('user_preferences')
+            .select('display_name')
+            .eq('user_id', collection.owner_id)
+            .single()
+
+        if (preferencesError) {
+            console.error('[Shared] Error fetching owner preferences:', preferencesError)
+            // Don't fail the request, just continue without the name
+        }
+
         // Check if share is active
         if (!collection.is_active) {
             return NextResponse.json(
@@ -94,7 +106,8 @@ export async function GET(
                 record_type,
                 doctor_name,
                 date,
-                summary
+                summary,
+                file_url
             `)
             .in('id', (
                 await supabaseAdmin
@@ -111,7 +124,10 @@ export async function GET(
             )
         }
 
-        return NextResponse.json({ documents })
+        return NextResponse.json({
+            documents,
+            ownerName: ownerPreferences?.display_name
+        })
 
     } catch (error) {
         console.error('[Shared] Unexpected error:', error)

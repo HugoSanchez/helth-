@@ -58,6 +58,7 @@ export const translations = {
         },
         documents: {
             title: "Your documents",
+            history: "Document History",
             emptyState: {
                 title: "Start by uploading your first document",
                 message: "Upload your first document"
@@ -187,6 +188,7 @@ export const translations = {
         },
         documents: {
             title: "Tus documentos",
+            history: "Historial de Documentos",
             emptyState: {
                 title: "Comienza subiendo tu primer documento",
                 message: "Sube tu primer documento"

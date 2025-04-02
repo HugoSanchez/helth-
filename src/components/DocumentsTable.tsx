@@ -58,9 +58,10 @@ interface DocumentsTableProps {
     onFileSelect?: (file: File) => Promise<void>
     onDeleteRecords?: (ids: string[]) => Promise<void>
     language?: Language
+    isSharedView?: boolean
 }
 
-export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, language = 'en' }: DocumentsTableProps) {
+export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, language = 'en', isSharedView = false }: DocumentsTableProps) {
     const { t } = useTranslation(language)
     const [selectedRows, setSelectedRows] = useState<string[]>([])
     const [expandedRows, setExpandedRows] = useState<string[]>([])
@@ -262,51 +263,53 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
         <Card className="xl:col-span-2 bg-muted/10 border border-border rounded-lg">
             <CardHeader className="flex flex-row items-center">
                 <div className="grid gap-2">
-                    <CardTitle>{t('documents.title')}</CardTitle>
+                    <CardTitle>{t('documents.history')}</CardTitle>
                     <CardDescription>
                         {t('documents.description')}
                     </CardDescription>
                 </div>
-                <div className="flex items-center gap-2 ml-auto">
-                    {selectedRows.length > 0 && (
-                        <>
+                {!isSharedView && (
+                    <div className="flex items-center gap-2 ml-auto">
+                        {selectedRows.length > 0 && (
+                            <>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="gap-1"
+                                    onClick={() => handleShare(selectedRows)}
+                                >
+                                    <Link2 className="h-4 w-4 mr-2" />
+                                    {t('documents.share.button')}
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant={selectedRows.length > 0 ? "destructive" : "outline"}
+                                    className="h-8 w-8 p-0"
+                                    onClick={handleDelete}
+                                    disabled={selectedRows.length === 0}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    <span className="sr-only">{t('common.delete')}</span>
+                                </Button>
+                            </>
+                        )}
+                        {onFileSelect && (
                             <Button
                                 size="sm"
-                                variant="outline"
                                 className="gap-1"
-                                onClick={() => handleShare(selectedRows)}
+                                onClick={() => document.getElementById('fileInput')?.click()}
+                                disabled={isUploading}
                             >
-                                <Link2 className="h-4 w-4 mr-2" />
-                                {t('documents.share.button')}
+                                {isUploading ? (
+                                    <Spinner size="sm" className="mr-2" />
+                                ) : (
+                                    <Upload className="h-4 w-4 mr-2" />
+                                )}
+                                {t('common.upload')}
                             </Button>
-                            <Button
-                                size="sm"
-                                variant={selectedRows.length > 0 ? "destructive" : "outline"}
-                                className="h-8 w-8 p-0"
-                                onClick={handleDelete}
-                                disabled={selectedRows.length === 0}
-                            >
-                                <Trash2 className="h-4 w-4" />
-                                <span className="sr-only">{t('common.delete')}</span>
-                            </Button>
-                        </>
-                    )}
-                    {onFileSelect && (
-                        <Button
-                            size="sm"
-                            className="gap-1"
-                            onClick={() => document.getElementById('fileInput')?.click()}
-                            disabled={isUploading}
-                        >
-                            {isUploading ? (
-                                <Spinner size="sm" className="mr-2" />
-                            ) : (
-                                <Upload className="h-4 w-4 mr-2" />
-                            )}
-                            {t('common.upload')}
-                        </Button>
-                    )}
-                </div>
+                        )}
+                    </div>
+                )}
                 <input
                     id="fileInput"
                     type="file"
@@ -325,14 +328,16 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                 <Table>
                     <TableHeader>
                         <TableRow className="hover:bg-transparent">
-                            <TableHead className="w-[50px]">
-                                <Checkbox
-                                    checked={selectedRows.length === documents.length}
-                                    onCheckedChange={toggleAll}
-                                    aria-label={t('documents.table.selectAll')}
-                                    className="h-3.5 w-3.5"
-                                />
-                            </TableHead>
+                            {!isSharedView && (
+                                <TableHead className="w-[50px]">
+                                    <Checkbox
+                                        checked={selectedRows.length === documents.length}
+                                        onCheckedChange={toggleAll}
+                                        aria-label={t('documents.table.selectAll')}
+                                        className="h-3.5 w-3.5"
+                                    />
+                                </TableHead>
+                            )}
                             <TableHead className="w-[300px]">{t('documents.table.name')}</TableHead>
                             <TableHead className="w-[200px]">{t('documents.table.type')}</TableHead>
                             <TableHead className="hidden md:table-cell w-[200px]">{t('documents.table.doctor')}</TableHead>
@@ -348,21 +353,39 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                                 <React.Fragment key={doc.id}>
                                     <TableRow
                                         className={cn(
-                                            "hover:bg-accent/50",
+                                            "hover:bg-accent/50 cursor-pointer",
                                             isExpanded && "bg-accent/50"
                                         )}
+                                        onClick={() => toggleExpand(doc.id)}
                                     >
-                                        <TableCell onClick={(e) => e.stopPropagation()}>
-                                            <Checkbox
-                                                checked={selectedRows.includes(doc.id)}
-                                                onCheckedChange={() => toggleRow(doc.id)}
-                                                aria-label={t('documents.table.selectDocument').replace('{name}', doc.display_name)}
-                                                className="h-3.5 w-3.5"
-                                            />
-                                        </TableCell>
+                                        {!isSharedView && (
+                                            <TableCell onClick={(e) => e.stopPropagation()}>
+                                                <Checkbox
+                                                    checked={selectedRows.includes(doc.id)}
+                                                    onCheckedChange={() => toggleRow(doc.id)}
+                                                    aria-label={t('documents.table.selectDocument').replace('{name}', doc.display_name)}
+                                                    className="h-3.5 w-3.5"
+                                                />
+                                            </TableCell>
+                                        )}
                                         <TableCell>
-                                            <div className="font-medium">
-                                                {doc.display_name}
+                                            <div className="flex items-center gap-2">
+                                                {doc.summary ? (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-4 w-4 p-0"
+                                                    >
+                                                        {isExpanded ? (
+                                                            <ChevronDown className="h-4 w-4" />
+                                                        ) : (
+                                                            <ChevronRight className="h-4 w-4" />
+                                                        )}
+                                                    </Button>
+                                                ) : (
+                                                    <div className="w-4" />
+                                                )}
+                                                <span className="font-medium">{doc.display_name}</span>
                                             </div>
                                         </TableCell>
                                         <TableCell>
@@ -391,13 +414,6 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem
-                                                        onClick={() => handleEdit(doc)}
-                                                        className="flex items-center"
-                                                    >
-                                                        <Pencil className="mr-2 h-4 w-4" />
-                                                        {t('documents.table.edit')}
-                                                    </DropdownMenuItem>
                                                     {doc.file_url && (
                                                         <>
                                                             <DropdownMenuItem
@@ -416,23 +432,37 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                                                             </DropdownMenuItem>
                                                         </>
                                                     )}
-                                                    <DropdownMenuItem
-                                                        onClick={() => handleShare([doc.id])}
-                                                        className="flex items-center"
-                                                    >
-                                                        <Share2 className="mr-2 h-4 w-4" />
-                                                        {t('documents.table.share')}
-                                                    </DropdownMenuItem>
+                                                    {!isSharedView && (
+                                                        <>
+                                                            <DropdownMenuItem
+                                                                onClick={() => handleEdit(doc)}
+                                                                className="flex items-center"
+                                                            >
+                                                                <Pencil className="mr-2 h-4 w-4" />
+                                                                {t('documents.table.edit')}
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                onClick={() => handleShare([doc.id])}
+                                                                className="flex items-center"
+                                                            >
+                                                                <Share2 className="mr-2 h-4 w-4" />
+                                                                {t('documents.table.share')}
+                                                            </DropdownMenuItem>
+                                                        </>
+                                                    )}
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
                                     {isExpanded && doc.summary && (
                                         <TableRow>
-                                            <TableCell colSpan={7}>
-                                                <div className="px-4 py-3 bg-muted/20 rounded-md">
+                                            <TableCell
+                                                colSpan={!isSharedView ? 6 : 5}
+                                                className="bg-muted/5"
+                                            >
+                                                <div className="px-4 py-3">
                                                     <h4 className="font-medium mb-1">{t('documents.table.summary')}</h4>
-                                                    <p className="text-sm text-muted-foreground">{doc.summary}</p>
+                                                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{doc.summary}</p>
                                                 </div>
                                             </TableCell>
                                         </TableRow>

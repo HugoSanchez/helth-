@@ -17,6 +17,7 @@ export default function SharedDocumentsPage({
     const [documents, setDocuments] = useState<HealthRecord[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const { preferences } = usePreferences()
+    const [ownerName, setOwnerName] = useState<string>("")
 
     useEffect(() => {
         const loadSharedDocuments = async () => {
@@ -30,9 +31,10 @@ export default function SharedDocumentsPage({
                     throw new Error(data.error || 'Failed to load shared documents')
                 }
 
-                const { documents } = await response.json()
+                const { documents, ownerName } = await response.json()
                 console.log('[SharedPage] Loaded documents:', documents?.length || 0)
                 setDocuments(documents)
+                setOwnerName(ownerName || "Someone")
             } catch (error) {
                 console.error('[SharedPage] Error:', error)
                 toast.error(error instanceof Error ? error.message : 'Failed to load shared documents')
@@ -58,15 +60,16 @@ export default function SharedDocumentsPage({
             <div className="flex flex-1 flex-col gap-4 mt-6 md:gap-8">
                 <Card className="xl:col-span-2">
                     <CardHeader>
-                        <CardTitle>Shared Documents</CardTitle>
-                        <CardDescription>
-                            These documents have been shared with you
+                        <CardTitle className="text-2xl">{ownerName}'s Medical Records</CardTitle>
+                        <CardDescription className="text-base">
+                            {ownerName} has shared these records with you
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <DocumentsTable
                             documents={documents}
                             language={preferences?.language || 'en'}
+                            isSharedView={true}
                         />
                     </CardContent>
                 </Card>
