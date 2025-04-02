@@ -14,8 +14,9 @@ export function Header() {
 	const router = useRouter()
 
 	const handleSignOut = async () => {
+		console.log('Signing out')
 		await supabase.auth.signOut()
-		router.replace('/login')
+		// Let SupabaseProvider handle the redirect
 	}
 
 	return (
