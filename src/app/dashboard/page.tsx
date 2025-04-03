@@ -7,7 +7,7 @@ import { usePreferences } from '@/hooks/usePreferences'
 import { DocumentsTable } from '@/components/DocumentsTable'
 import { useTranslation } from '@/hooks/useTranslation'
 import { HealthRecord } from '@/types/health'
-import { Upload } from 'lucide-react'
+import { Upload, Link2 } from 'lucide-react'
 import {
 	Avatar,
 	AvatarFallback,
@@ -20,6 +20,7 @@ export default function DashboardPage() {
 	const { preferences, loading: prefsLoading, error: prefsError } = usePreferences()
 	const { t } = useTranslation(preferences?.language || 'en')
 	const [documents, setDocuments] = useState<HealthRecord[]>([])
+	const [selectedDocuments, setSelectedDocuments] = useState<string[]>([])
 	const [isLoading, setIsLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
@@ -98,6 +99,31 @@ export default function DashboardPage() {
 		}
 	}
 
+	const handleShare = async () => {
+		try {
+			const response = await fetch('/api/documents/share', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					documentIds: selectedDocuments.length ? selectedDocuments : documents.map(d => d.id)
+				}),
+			})
+
+			if (!response.ok) {
+				throw new Error('Failed to create share link')
+			}
+
+			const { url } = await response.json()
+			await navigator.clipboard.writeText(url)
+			toast.success(t('documents.share.success'))
+		} catch (err) {
+			console.error('Error sharing documents:', err)
+			toast.error(t('documents.share.error'))
+		}
+	}
+
 	if (prefsLoading || isLoading) {
 		return (
 			<main className="flex items-center justify-center min-h-screen">
@@ -117,13 +143,15 @@ export default function DashboardPage() {
 						{t('dashboard.thisIsYourDashboard')}
 					</h1>
 				</div>
-				<div>
+				<div className="flex gap-2">
 					<Button
-						className="bg-teal-400 text-primary-foreground"
-						onClick={() => document.getElementById('fileInput')?.click()}
+						className="gap-2 text-md font-sans bg-gray-800 hover:bg-gray-800 hover:opacity-90 text-white font-medium"
+						onClick={handleShare}
 					>
-						<Upload className="mr-2 h-4 w-4" />
-						{t('common.upload')}
+						<Link2 className="h-5 w-5 mr-3" />
+						{selectedDocuments.length > 0
+							? t('documents.share.selected').replace('{count}', selectedDocuments.length.toString())
+							: t('documents.share.all')}
 					</Button>
 				</div>
 			</div>
@@ -133,6 +161,7 @@ export default function DashboardPage() {
 						documents={documents}
 						onFileSelect={handleFileSelect}
 						onDeleteRecords={handleDelete}
+						onSelectionChange={setSelectedDocuments}
 						language={preferences?.language || 'en'}
 					/>
 				</div>

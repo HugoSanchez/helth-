@@ -58,11 +58,12 @@ interface DocumentsTableProps {
     documents: HealthRecord[]
     onFileSelect?: (file: File) => Promise<void>
     onDeleteRecords?: (ids: string[]) => Promise<void>
+    onSelectionChange?: (selectedIds: string[]) => void
     language?: Language
     isSharedView?: boolean
 }
 
-export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, language = 'en', isSharedView = false }: DocumentsTableProps) {
+export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, onSelectionChange, language = 'en', isSharedView = false }: DocumentsTableProps) {
     const { t } = useTranslation(language)
     const [selectedRows, setSelectedRows] = useState<string[]>([])
     const [expandedRows, setExpandedRows] = useState<string[]>([])
@@ -70,19 +71,17 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
     const [editingRecord, setEditingRecord] = useState<HealthRecord | null>(null)
 
     const toggleAll = () => {
-        if (selectedRows.length === documents.length) {
-            setSelectedRows([])
-        } else {
-            setSelectedRows(documents.map(doc => doc.id))
-        }
+        const newSelection = selectedRows.length === documents.length ? [] : documents.map(doc => doc.id)
+        setSelectedRows(newSelection)
+        onSelectionChange?.(newSelection)
     }
 
     const toggleRow = (id: string) => {
-        if (selectedRows.includes(id)) {
-            setSelectedRows(selectedRows.filter(rowId => rowId !== id))
-        } else {
-            setSelectedRows([...selectedRows, id])
-        }
+        const newSelection = selectedRows.includes(id)
+            ? selectedRows.filter(rowId => rowId !== id)
+            : [...selectedRows, id]
+        setSelectedRows(newSelection)
+        onSelectionChange?.(newSelection)
     }
 
     const toggleExpand = (id: string) => {
@@ -271,21 +270,10 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                 </div>
                 {!isSharedView && (
                     <div className="flex items-center gap-2 ml-auto">
-                        {selectedRows.length > 0 && (
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-1"
-                                onClick={() => handleShare(selectedRows)}
-                            >
-                                <Link2 className="h-4 w-4 mr-2" />
-                                {t('documents.share.button')}
-                            </Button>
-                        )}
                         <Button
                             size="sm"
                             variant="outline"
-                            className="h-8 w-8 p-0"
+                            className="h-8 w-8 p-0 bg-muted/10"
                             onClick={handleDelete}
                             disabled={selectedRows.length === 0}
                         >
@@ -295,7 +283,8 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                         {onFileSelect && (
                             <Button
                                 size="sm"
-                                className="gap-1"
+								variant="outline"
+                                className="gap-1 bg-muted/10 border-black/20 font-medium"
                                 onClick={() => document.getElementById('fileInput')?.click()}
                                 disabled={isUploading}
                             >

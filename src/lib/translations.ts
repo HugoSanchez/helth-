@@ -113,10 +113,12 @@ export const translations = {
             },
             share: {
                 title: "Share Documents",
-                success: "Share link created successfully",
+                success: "Share link copied to clipboard!",
                 error: "Failed to create share link",
                 copied: "Share link copied to clipboard",
                 button: "Share Selected",
+                all: "Share all",
+                selected: "Share {count}",
                 single: "Share Document",
                 noDocuments: "Select documents to share"
             }
@@ -243,10 +245,12 @@ export const translations = {
             },
             share: {
                 title: "Compartir Documentos",
-                success: "Enlace de compartir creado exitosamente",
-                error: "Error al crear enlace de compartir",
+                success: "¡Enlace copiado al portapapeles!",
+                error: "Error al crear el enlace",
                 copied: "Enlace copiado al portapapeles",
                 button: "Compartir Seleccionados",
+                all: "Compartir",
+                selected: "Compartir {count}",
                 single: "Compartir Documento",
                 noDocuments: "Selecciona documentos para compartir"
             }

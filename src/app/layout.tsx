@@ -28,7 +28,7 @@ export default function RootLayout({
 				<SupabaseProvider>
 					<Header />
 					{children}
-					<Toaster />
+					<Toaster/>
 				</SupabaseProvider>
 			</body>
 		</html>
