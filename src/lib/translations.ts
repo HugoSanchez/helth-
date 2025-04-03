@@ -188,7 +188,7 @@ export const translations = {
         },
         documents: {
             title: "Tus documentos",
-            history: "Historial de Documentos",
+            history: "Historial",
             emptyState: {
                 title: "Comienza subiendo tu primer documento",
                 message: "Sube tu primer documento"
@@ -219,11 +219,11 @@ export const translations = {
                 error: "Error al actualizar el documento"
             },
             types: {
-                lab_report: "Informe de Laboratorio",
-                prescription: "Receta",
+                lab_report: "Informe Médico ",
+                prescription: "Receta Médica",
                 imaging: "Imagen Médica",
                 clinical_notes: "Notas Clínicas",
-                other: "Otro"
+                other: "Otros"
             },
             upload: {
                 loading: "Subiendo documento...",

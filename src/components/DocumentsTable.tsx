@@ -3,6 +3,7 @@ import Link from "next/link"
 import { useState } from "react"
 import {
     ArrowUpRight,
+	FileText,
     TestTube,
     Pill,
     Scan,
@@ -46,11 +47,11 @@ import { Label } from "@/components/ui/label"
 import { updateDocument } from '@/lib/api/documents'
 
 const recordTypeConfig = {
-    lab_report: { icon: TestTube, label: "documents.types.lab_report", backgroundColor: "" },
-    prescription: { icon: Pill, label: "documents.types.prescription", backgroundColor: "" },
-    imaging: { icon: Scan, label: "documents.types.imaging", backgroundColor: "" },
-    clinical_notes: { icon: ClipboardList, label: "documents.types.clinical_notes", backgroundColor: "" },
-    other: { icon: File, label: "documents.types.other", backgroundColor: "" }
+    lab_report: { icon: FileText, label: "documents.types.lab_report", styles: "border text-sky-700 border-sky-700 rounded-md" },
+    prescription: { icon: Pill, label: "documents.types.prescription", styles: "border text-purple-700 border-purple-700 rounded-md" },
+    imaging: { icon: Scan, label: "documents.types.imaging", styles: "border text-lime-700 border-lime-700 rounded-md" },
+    clinical_notes: { icon: ClipboardList, label: "documents.types.clinical_notes", styles: "border text-amber-700 border-amber-700 rounded-md" },
+    other: { icon: File, label: "documents.types.other", styles: "border text-gray-700 border-gray-700 rounded-md" }
 } as const;
 
 interface DocumentsTableProps {
@@ -260,9 +261,9 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
     }
 
     return (
-        <Card className="xl:col-span-2 bg-muted/10 border border-border rounded-lg">
+        <Card className="xl:col-span-2 bg-muted/15 rounded-lg">
             <CardHeader className="flex flex-row items-center">
-                <div className="grid gap-2">
+                <div className="">
                     <CardTitle>{t('documents.history')}</CardTitle>
                     <CardDescription>
                         {t('documents.description')}
@@ -338,23 +339,25 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                                     />
                                 </TableHead>
                             )}
-                            <TableHead className="w-[300px]">{t('documents.table.name')}</TableHead>
-                            <TableHead className="w-[200px]">{t('documents.table.type')}</TableHead>
-                            <TableHead className="hidden md:table-cell w-[200px]">{t('documents.table.doctor')}</TableHead>
-                            <TableHead className="hidden md:table-cell w-[150px]">{t('documents.table.date')}</TableHead>
-                            <TableHead className="w-[70px] text-right">{t('documents.table.actions')}</TableHead>
+                            <TableHead className="w-[300px] font-bold">{t('documents.table.name')}</TableHead>
+                            <TableHead className="w-[200px] font-bold">{t('documents.table.type')}</TableHead>
+                            <TableHead className="hidden md:table-cell w-[200px] font-bold">{t('documents.table.doctor')}</TableHead>
+                            <TableHead className="hidden md:table-cell w-[150px] font-bold">{t('documents.table.date')}</TableHead>
+                            <TableHead className="w-[70px] text-right font-bold">{t('documents.table.actions')}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {documents.map(doc => {
+							const isSelected = selectedRows.includes(doc.id)
                             const RecordIcon = recordTypeConfig[doc.record_type].icon;
                             const isExpanded = expandedRows.includes(doc.id);
                             return (
                                 <React.Fragment key={doc.id}>
                                     <TableRow
                                         className={cn(
-                                            "hover:bg-accent/50 cursor-pointer",
-                                            isExpanded && "bg-accent/50"
+                                            "hover: cursor-pointer",
+                                            isExpanded && "hover:bg-muted/20 bg-muted/20",
+											isSelected && "bg-muted/30 hover:bg-muted/30"
                                         )}
                                         onClick={() => toggleExpand(doc.id)}
                                     >
@@ -370,39 +373,24 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                                         )}
                                         <TableCell>
                                             <div className="flex items-center gap-2">
-                                                {doc.summary ? (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-4 w-4 p-0"
-                                                    >
-                                                        {isExpanded ? (
-                                                            <ChevronDown className="h-4 w-4" />
-                                                        ) : (
-                                                            <ChevronRight className="h-4 w-4" />
-                                                        )}
-                                                    </Button>
-                                                ) : (
-                                                    <div className="w-4" />
-                                                )}
-                                                <span className="font-medium">{doc.display_name}</span>
+                                                <span className="font-light">{doc.display_name}</span>
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
                                                 <Badge
                                                     variant="outline"
-                                                    className={`text-xs gap-2 border-none p-2 ${recordTypeConfig[doc.record_type].backgroundColor}`}
+                                                    className={`text-xs font-medium gap-2 p-2 ${recordTypeConfig[doc.record_type].styles}`}
                                                 >
                                                     <RecordIcon className={`h-4 w-4`} />
                                                     {t(recordTypeConfig[doc.record_type].label)}
                                                 </Badge>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="hidden md:table-cell">
+                                        <TableCell className="hidden md:table-cell font-light">
                                             {doc.doctor_name || t('documents.table.noDoctorSpecified')}
                                         </TableCell>
-                                        <TableCell className="hidden md:table-cell">
+                                        <TableCell className="hidden md:table-cell font-light">
                                             {doc.date ? format(new Date(doc.date), 'MMMM, yyyy') : t('documents.table.noDate')}
                                         </TableCell>
                                         <TableCell className="text-right">
@@ -458,7 +446,7 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                                         <TableRow>
                                             <TableCell
                                                 colSpan={!isSharedView ? 6 : 5}
-                                                className="bg-muted/5"
+                                                className=""
                                             >
                                                 <div className="px-4 py-3">
                                                     <h4 className="font-medium mb-1">{t('documents.table.summary')}</h4>
