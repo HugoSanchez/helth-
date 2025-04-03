@@ -40,7 +40,7 @@ import { Language } from '@/lib/translations'
 import { Spinner } from "@/components/ui/spinner"
 import { toast } from "sonner"
 import { cn } from "@/lib/client/utils"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetClose } from "@/components/ui/sheet"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -48,7 +48,7 @@ import { updateDocument } from '@/lib/api/documents'
 
 const recordTypeConfig = {
     lab_report: { icon: FileText, label: "documents.types.lab_report", styles: "border text-sky-700 border-sky-700 rounded-md" },
-    prescription: { icon: Pill, label: "documents.types.prescription", styles: "border text-purple-700 border-purple-700 rounded-md" },
+    prescription: { icon: Pill, label: "documents.types.prescription", styles: "border text-teal-700 border-teal-700 rounded-md" },
     imaging: { icon: Scan, label: "documents.types.imaging", styles: "border text-lime-700 border-lime-700 rounded-md" },
     clinical_notes: { icon: ClipboardList, label: "documents.types.clinical_notes", styles: "border text-amber-700 border-amber-700 rounded-md" },
     other: { icon: File, label: "documents.types.other", styles: "border text-gray-700 border-gray-700 rounded-md" }
@@ -272,28 +272,26 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                 {!isSharedView && (
                     <div className="flex items-center gap-2 ml-auto">
                         {selectedRows.length > 0 && (
-                            <>
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="gap-1"
-                                    onClick={() => handleShare(selectedRows)}
-                                >
-                                    <Link2 className="h-4 w-4 mr-2" />
-                                    {t('documents.share.button')}
-                                </Button>
-                                <Button
-                                    size="sm"
-                                    variant={selectedRows.length > 0 ? "destructive" : "outline"}
-                                    className="h-8 w-8 p-0"
-                                    onClick={handleDelete}
-                                    disabled={selectedRows.length === 0}
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                    <span className="sr-only">{t('common.delete')}</span>
-                                </Button>
-                            </>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1"
+                                onClick={() => handleShare(selectedRows)}
+                            >
+                                <Link2 className="h-4 w-4 mr-2" />
+                                {t('documents.share.button')}
+                            </Button>
                         )}
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 w-8 p-0"
+                            onClick={handleDelete}
+                            disabled={selectedRows.length === 0}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">{t('common.delete')}</span>
+                        </Button>
                         {onFileSelect && (
                             <Button
                                 size="sm"
@@ -464,7 +462,11 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
             <Sheet open={editingRecord !== null} onOpenChange={() => setEditingRecord(null)}>
                 <SheetContent>
                     <SheetHeader>
-                        <SheetTitle>{t('documents.edit.title')}</SheetTitle>
+                        <SheetTitle className="text-2xl font-regular font-serif">{t('documents.edit.title')}</SheetTitle>
+                        <SheetClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none cursor-pointer">
+                            <X className="h-4 w-4" />
+                            <span className="sr-only">Close</span>
+                        </SheetClose>
                     </SheetHeader>
                     <form onSubmit={handleEditSubmit} className="space-y-6">
                         <div className="space-y-4">
@@ -473,6 +475,7 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                                 <Input
                                     id="display_name"
                                     name="display_name"
+									className="bg-white h-12"
                                     defaultValue={editingRecord?.display_name}
                                     required
                                 />
@@ -485,12 +488,12 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                                     defaultValue={editingRecord?.record_type}
                                     required
                                 >
-                                    <SelectTrigger id="record_type">
+                                    <SelectTrigger id="record_type" className="bg-white h-12">
                                         <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="bg-white">
                                         {Object.entries(recordTypeConfig).map(([value, config]) => (
-                                            <SelectItem key={value} value={value}>
+                                            <SelectItem key={value} value={value} className="py-2">
                                                 <div className="flex items-center gap-2">
                                                     <config.icon className="h-4 w-4" />
                                                     {t(config.label)}
@@ -506,6 +509,7 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                                 <Input
                                     id="doctor_name"
                                     name="doctor_name"
+                                    className="bg-white h-12"
                                     defaultValue={editingRecord?.doctor_name || ''}
                                 />
                             </div>
@@ -516,6 +520,7 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                                     id="date"
                                     name="date"
                                     type="date"
+									className="bg-white h-12"
                                     defaultValue={editingRecord?.date ? new Date(editingRecord.date).toISOString().split('T')[0] : ''}
                                 />
                             </div>
@@ -525,7 +530,7 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                                 <textarea
                                     id="summary"
                                     name="summary"
-                                    className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex min-h-[180px] bg-white font-light leading-6 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                     defaultValue={editingRecord?.summary || ''}
                                     placeholder={t('documents.edit.summaryPlaceholder')}
                                 />
@@ -533,14 +538,7 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, langu
                         </div>
 
                         <SheetFooter>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setEditingRecord(null)}
-                            >
-                                {t('documents.edit.cancel')}
-                            </Button>
-                            <Button type="submit">
+                            <Button type="submit" className="w-full h-12 text-md tracking-wider font-sans font-light">
                                 {t('documents.edit.save')}
                             </Button>
                         </SheetFooter>

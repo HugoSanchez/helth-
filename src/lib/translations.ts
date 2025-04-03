@@ -211,7 +211,7 @@ export const translations = {
                 edit: "Editar"
             },
             edit: {
-                title: "Editar detalles del documento",
+                title: "Editar",
                 save: "Guardar cambios",
                 cancel: "Cancelar",
                 loading: "Actualizando documento...",
