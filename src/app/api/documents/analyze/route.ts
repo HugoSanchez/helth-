@@ -86,7 +86,7 @@ export async function POST(req: Request) {
                 success: false,
                 error: analysis.error_message,
                 errorType: analysis.error_type
-            }, { status: 422 }) // 422 Unprocessable Entity
+            }, { status: 200 })
         }
 
         // Store document in Supabase only if analysis was successful
