@@ -79,3 +79,21 @@ shared_collection_access:
     - When User B accesses the share, we record it here
     - Tracks who accessed it and when
     - Useful for audit trail and future notifications
+
+∫
+
+## HOW THE SCANNING PROCESS WORKS: HYBRID APPROACH
+
+1. Initial API call starts the process and returns immediately
+2. Creates a "scan_session" record in the database
+3. Process runs in background
+4. Frontend polls status endpoint every few seconds
+5. UI shows progress based on status updates
+
+Pros:
+
+- Relatively simple to implement
+- Robust (process continues even if user closes browser)
+- Good UX with progress updates
+- No need for complex queue systems or WebSocket setup
+- Can be enhanced later if needed

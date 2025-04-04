@@ -32,15 +32,19 @@ export const translations = {
                     items: [
                         "Save time by avoiding manual uploads",
                         "Don't miss important medical information",
-						"Automatically find medical documents in your inbox",
+                        "Automatically find medical documents in your inbox",
                         "Secure and private - we only access medical-related emails and we only store the documents you asks us to keep"
                     ]
-                }
+                },
+                starting: "Starting email scan...",
+                emails: "emails processed",
+                documents: "documents found",
+                completed: "Scan completed successfully"
             },
-			upload:{
-				title: "Upload your first file",
-				description: "Lets upload your first file. Remember we only support PDF files for now."
-			},
+            upload: {
+                title: "Upload your first file",
+                description: "Lets upload your first file. Remember we only support PDF files for now."
+            }
         },
         dashboard: {
             greeting: "Hi {name},",
@@ -164,16 +168,20 @@ export const translations = {
                 benefits: {
                     title: "Beneficios de conectar tu Gmail y cómo funciona:",
                     items: [
-						"Solo accedemos a tus correos una vez",
-						"No guardamos ni tus correos ni tus credenciales",
-						"Encuentramos automáticamente documentos médicos en tu bandeja de entrada sin que tengas que hacer nada.",
+                        "Solo accedemos a tus correos una vez",
+                        "No guardamos ni tus correos ni tus credenciales",
+                        "Encuentramos automáticamente documentos médicos en tu bandeja de entrada sin que tengas que hacer nada."
                     ]
-                }
+                },
+                starting: "Iniciando escaneo de correos...",
+                emails: "correos procesados",
+                documents: "documentos encontrados",
+                completed: "Escaneo completado exitosamente"
             },
-			upload:{
-				title: "Sube tu primer archivo",
-				description: "Prueba a subir un primer archivo. Recuerda que solo aceptamos el formato PDF por el momento."
-			},
+            upload: {
+                title: "Sube tu primer archivo",
+                description: "Prueba a subir un primer archivo. Recuerda que solo aceptamos el formato PDF por el momento."
+            }
         },
         dashboard: {
             greeting: "Hola {name},",

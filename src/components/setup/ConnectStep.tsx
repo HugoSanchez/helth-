@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useTranslation } from '@/hooks/useTranslation'
 import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/client/utils'
 import type { Preferences } from '@/hooks/usePreferences'
+import { ScanProgress } from './ScanProgress'
 
 function GoogleLogo() {
     return (
@@ -36,17 +36,20 @@ interface ConnectStepProps {
 }
 
 export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
-    const router = useRouter()
     const { t } = useTranslation(preferences?.language || 'en')
     const [isExpanded, setIsExpanded] = useState(false)
+    const [isScanning, setIsScanning] = useState(false)
 
     const handleConnect = () => {
-        router.push('/dashboard')
-        onComplete()
+        setIsScanning(true)
     }
 
     const handleSkip = () => {
         onComplete()
+    }
+
+    if (isScanning) {
+        return <ScanProgress language={preferences?.language || 'en'} />
     }
 
     return (
