@@ -1,14 +1,5 @@
 import { supabaseAdmin } from '@/lib/server/supabase';
-
-interface DocumentAnalysis {
-	summary?: string;
-	record_type?: string;
-	record_subtype?: string;
-	doctor_name?: string;
-	date?: string;
-	record_name?: string;
-	display_name?: string;
-}
+import { DocumentAnalysis } from './anthropic';
 
 export async function storeDocument(
 	userId: string,
@@ -17,6 +8,11 @@ export async function storeDocument(
 	analysis?: DocumentAnalysis
 ) {
 	try {
+		// Only proceed if analysis was successful
+		if (analysis?.status === 'error') {
+			throw new Error(analysis.error_message || 'Analysis failed');
+		}
+
 		// Sanitize the filename by:
 		// 1. Removing accents/diacritics
 		// 2. Converting to lowercase

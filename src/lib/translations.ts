@@ -96,9 +96,10 @@ export const translations = {
                 other: "Other"
             },
             upload: {
-                loading: "Uploading document...",
+                loading: "Analyzing document...",
                 success: "Document uploaded successfully",
-                error: "Failed to upload document"
+                error: "Failed to upload document",
+                invalidType: "Invalid document type"
             },
             delete: {
                 loading: "Deleting documents...",
@@ -228,9 +229,10 @@ export const translations = {
                 other: "Otros"
             },
             upload: {
-                loading: "Subiendo documento...",
+                loading: "Analizando documento...",
                 success: "Documento subido exitosamente",
-                error: "Error al subir el documento"
+                error: "Error al subir el documento",
+                invalidType: "Este documento no es un registro médico"
             },
             delete: {
                 loading: "Eliminando documentos...",

@@ -32,26 +32,39 @@ export async function fetchUserDocuments(): Promise<HealthRecord[]> {
     return data
 }
 
-export async function analyzeDocument(file: File): Promise<any> {
+export async function analyzeDocument(file: File): Promise<{ success: boolean; error?: string; data?: any }> {
     const formData = new FormData()
     formData.append('file', file)
 
-    const response = await fetch('/api/documents/analyze', {
-        method: 'POST',
-        body: formData,
-    })
+    try {
+        const response = await fetch('/api/documents/analyze', {
+            method: 'POST',
+            body: formData,
+        })
 
-    const data = await response.json()
+        const data = await response.json()
 
-    if (!response.ok) {
-        throw new APIError(
-            data.error || 'Failed to analyze document',
-            response.status,
-            response.status === 401
-        )
+        if (!response.ok) {
+            if (response.status === 422 && data.errorType === 'not_medical_document') {
+                return { success: false, error: 'Invalid document type' }
+            }
+            return {
+                success: false,
+                error: data.error || 'Failed to analyze document'
+            }
+        }
+
+        return {
+            success: true,
+            data
+        }
+    } catch (error) {
+        // Handle network errors or other unexpected errors
+        return {
+            success: false,
+            error: 'Failed to analyze document'
+        }
     }
-
-    return data
 }
 
 export async function deleteDocuments(recordIds: string[]): Promise<void> {

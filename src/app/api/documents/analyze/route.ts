@@ -78,8 +78,20 @@ export async function POST(req: Request) {
 
         // Analyze document with Claude
         const analysis = await analyzeDocument(base64Pdf, userLanguage)
-        // Store document in Supabase
+
+        // If analysis returned an error, return it to the client without storing
+        if (analysis.status === 'error') {
+            console.log('[Analyze] Analysis failed:', analysis.error_type, analysis.error_message);
+            return NextResponse.json({
+                success: false,
+                error: analysis.error_message,
+                errorType: analysis.error_type
+            }, { status: 422 }) // 422 Unprocessable Entity
+        }
+
+        // Store document in Supabase only if analysis was successful
         const storedDoc = await storeDocument(user.id, file.name, buffer, analysis)
+
         // Return the analysis results
         return NextResponse.json({
             success: true,

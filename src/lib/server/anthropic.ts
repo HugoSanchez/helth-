@@ -9,6 +9,19 @@ const anthropic = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+export interface DocumentAnalysis {
+    status: "success" | "error";
+    error_type?: "not_medical_document" | "encrypted_pdf" | "unreadable_content" | "unsupported_language" | "empty_document" | "unknown";
+    error_message?: string;
+    record_type?: "lab_report" | "prescription" | "imaging" | "clinical_notes" | "other";
+    record_subtype?: string;
+    record_name?: string;
+    display_name?: string;
+    summary?: string;
+    doctor_name?: string;
+    date?: string;
+}
+
 /**
  * Analyzes a PDF document using Claude's API
  * Uses function calling to ensure structured response
@@ -17,7 +30,7 @@ const anthropic = new Anthropic({
  * @param language - The language to use for the summary (e.g. 'en', 'es')
  * @returns The analyzed document information
  */
-export async function analyzeDocument(base64Pdf: string, language: string = 'en') {
+export async function analyzeDocument(base64Pdf: string, language: string = 'en'): Promise<DocumentAnalysis> {
     try {
         console.log('[Claude] Sending request to Claude API...');
         const response = await anthropic.beta.messages.create({
@@ -25,16 +38,37 @@ export async function analyzeDocument(base64Pdf: string, language: string = 'en'
             max_tokens: 4096,
             tools: [{
                 name: "processHealthRecord",
-                description: "Process and structure medical document information",
+                description: "Process and structure medical document information, with error handling for non-medical or unreadable documents",
                 input_schema: {
                     type: "object",
                     properties: {
+                        status: {
+                            type: "string",
+                            enum: ["success", "error"],
+                            description: "The status of the analysis"
+                        },
+                        error_type: {
+                            type: "string",
+                            enum: [
+                                "not_medical_document",
+                                "encrypted_pdf",
+                                "unreadable_content",
+                                "unsupported_language",
+                                "empty_document",
+                                "unknown"
+                            ],
+                            description: "The type of error encountered during analysis"
+                        },
+                        error_message: {
+                            type: "string",
+                            description: "A human-readable description of the error"
+                        },
                         record_type: {
                             type: "string",
                             enum: ["lab_report", "prescription", "imaging", "clinical_notes", "other"],
                             description: "The type of medical record"
                         },
-						record_subtype: {
+                        record_subtype: {
                             type: "string",
                             description: "Optional subtype of the record"
                         },
@@ -59,7 +93,7 @@ export async function analyzeDocument(base64Pdf: string, language: string = 'en'
                             description: "The document date in ISO format (YYYY-MM-DD), if present"
                         }
                     },
-                    required: ["record_type", "record_name", "display_name", "summary"]
+                    required: ["status"]
                 }
             }],
             messages: [
@@ -76,54 +110,47 @@ export async function analyzeDocument(base64Pdf: string, language: string = 'en'
                         },
                         {
                             type: 'text',
-                            text: `Please analyze this medical document and extract the key information using the processHealthRecord function.
+                            text: `Please analyze this document and extract key information using the processHealthRecord function.
 
-							    For the record_type field, make you don't miss lab results.
-							    For the record_subtype field, we're looking for more specific information For instance, good examples would include:
-								  - Bloodwork
-								  - Heart scan
-								  - X-ray
-								  - CT scan
-								  - MRI
-								  - Ultrasound
-								  - EKG
-								  - EEG
+                            First, verify if this is a valid, readable medical document:
+                            1. Check if you can read and understand the content
+                            2. Verify if it's actually a medical document
+                            3. If either check fails, return an error with appropriate error_type and message
 
-                                Keep record_type and record_subtype in English for consistency.
+                            If the document is valid and medical in nature, extract the information as follows:
 
-                                Provide the summary and display_name in ${language}. Make sure to use appropriate medical terminology in the target language.
+                            For the record_type field:
+                            - Carefully identify if it's a lab report, prescription, imaging report, or clinical notes
+                            - Don't miss lab results or prescriptions
+                            - Use "other" only if truly cannot be categorized
 
-								For the record_name field (used for storage), generate a clean filename that:
-									1. Describes the type and key information (e.g., "blood-work" for a CBC)
-									2. Uses only lowercase letters, numbers, and hyphens
-									3. Does not include special characters or spaces
-									4. Ends with .pdf
+                            For the record_subtype field, provide specific information like:
+                            - Bloodwork
+                            - Heart scan
+                            - X-ray
+                            - CT scan
+                            - MRI
+                            - Ultrasound
+                            - EKG
+                            - EEG
 
-									Example record_names:
-									- blood-work-march-2024.pdf
-									- chest-xray-2024.pdf
-									- metformin-prescription.pdf
-									- cardiology-notes-march-2024.pdf
+                            Keep record_type and record_subtype in English for consistency.
 
-                                For the display_name field (shown to users), create a descriptive name that:
-                                    1. Is very short and in the user's language (${language})
-                                    2. Includes the type of document (bloodwork, xray, etc)
-                                    3. Can include spaces and proper capitalization
-                                    4. Is very short, only key words
+                            Provide the summary and display_name in ${language}. Use appropriate medical terminology in the target language.
 
-									Example display_names in English:
-									- Blood Count Results
-									- Chest X-Ray Report
-									- Metformin Prescription
-									- Cardiology Consultation Notes
+                            For the record_name field (used for storage), generate a clean filename that:
+                            1. Describes the type and key information
+                            2. Uses only lowercase letters, numbers, and hyphens
+                            3. Does not include special characters or spaces
+                            4. Ends with .pdf
 
-                                Example display_names in Spanish:
-                                - Resultados del Análisis de Sangre Completo - Marzo 2024
-                                - Radiografía de Tórax
-                                - Receta de Metformina - Dr. Smith
-                                - Notas de Consulta Cardiológica
+                            For the display_name field (shown to users), create a descriptive name that:
+                            1. Is very short and in the user's language (${language})
+                            2. Includes the type of document
+                            3. Can include spaces and proper capitalization
+                            4. Is very short, only key words
 
-								Please only return the JSON object, nothing else.`
+                            Please return only the JSON object, nothing else.`
                         },
                     ],
                 },
@@ -144,11 +171,15 @@ export async function analyzeDocument(base64Pdf: string, language: string = 'en'
 
         if (!analysis) {
             console.log('[Claude] No analysis found in response');
-            throw new Error('No valid analysis from Claude');
+            return {
+                status: 'error',
+                error_type: 'unknown',
+                error_message: 'No valid analysis from Claude'
+            };
         }
 
-        console.log('[Claude] Analysis successful:', analysis);
-        return analysis;
+        console.log('[Claude] Analysis result:', analysis);
+        return analysis as DocumentAnalysis;
     } catch (error) {
         console.error('[Claude] Error in analyzeDocument:', error);
         throw error;

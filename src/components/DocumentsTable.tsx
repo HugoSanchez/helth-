@@ -45,6 +45,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { updateDocument } from '@/lib/api/documents'
+import { analyzeDocument } from '@/lib/api/documents'
 
 const recordTypeConfig = {
     lab_report: { icon: FileText, label: "documents.types.lab_report", styles: "border text-sky-700 border-sky-700 rounded-md" },
@@ -168,15 +169,32 @@ export function DocumentsTable({ documents, onFileSelect, onDeleteRecords, onSel
 
         setIsUploading(true)
 
-        const promise = onFileSelect(file)
+        const promise = (async () => {
+            const result = await analyzeDocument(file)
+
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to analyze document')
+            }
+
+            await onFileSelect(file)
+            return result
+        })()
+
         toast.promise(promise, {
             loading: t('documents.upload.loading'),
             success: t('documents.upload.success'),
-            error: t('documents.upload.error'),
+            error: (err) => {
+                if (err instanceof Error && err.message === 'Invalid document type') {
+                    return t('documents.upload.invalidType')
+                }
+                return t('documents.upload.error')
+            }
         })
 
         try {
             await promise
+        } catch (error) {
+            // Error already handled by toast
         } finally {
             setIsUploading(false)
         }
