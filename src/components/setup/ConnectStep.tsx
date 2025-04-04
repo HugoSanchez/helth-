@@ -41,7 +41,16 @@ export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
     const [isScanning, setIsScanning] = useState(false)
 
     const handleConnect = () => {
-        setIsScanning(true)
+        const params = new URLSearchParams({
+            client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+            redirect_uri: process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI!,
+            response_type: 'code',
+            scope: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email',
+            access_type: 'offline',
+            prompt: 'consent'
+        });
+
+        window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
     }
 
     const handleSkip = () => {

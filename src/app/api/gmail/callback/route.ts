@@ -1,59 +1,67 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { getTokens } from '@/lib/google'
-import { supabaseAdmin } from '@/lib/server/supabase'
+import { google } from 'googleapis'
+
+const oauth2Client = new google.auth.OAuth2(
+	process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+	process.env.GOOGLE_CLIENT_SECRET,
+	process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI
+);
 
 export async function GET(request: Request) {
-	const { searchParams } = new URL(request.url)
-	const code = searchParams.get('code')
-	const state = searchParams.get('state')
-	const error = searchParams.get('error')
-
-	if (error || !code || !state) {
-		console.error('Gmail auth error:', { error, code: !!code, state: !!state })
-		return NextResponse.redirect(new URL('/dashboard?error=gmail_auth_failed', request.url))
-	}
-
 	try {
-		// Decode the access token from state
-		const accessToken = atob(state)
+		const { searchParams } = new URL(request.url);
+		const code = searchParams.get('code');
 
-		// Initialize regular Supabase client for auth
-		const cookieStore = cookies()
-		const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
-
-		// Get user session using the access token
-		const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken)
-
-		if (userError || !user) {
-			console.error('Failed to get user:', userError)
-			return NextResponse.redirect(new URL('/login', request.url))
+		if (!code) {
+			return NextResponse.redirect(new URL('/settings?error=no_code', request.url));
 		}
 
-		// Exchange the Google code for tokens
-		const tokens = await getTokens(code)
+		// Get Supabase user from the session
+		const supabase = createRouteHandlerClient({ cookies });
+		const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-		// Store tokens in Supabase using the admin client
-		const { error: dbError } = await supabaseAdmin
+		if (authError || !user) {
+			console.error('Auth error:', authError);
+			return NextResponse.redirect(new URL('/login', request.url));
+		}
+
+		// Exchange code for tokens
+		const { tokens } = await oauth2Client.getToken(code);
+
+		// Set credentials to get user info
+		oauth2Client.setCredentials(tokens);
+
+		// Get user's email
+		const oauth2 = google.oauth2('v2');
+		const { data: userInfo } = await oauth2.userinfo.get({ auth: oauth2Client });
+
+		if (!userInfo.email) {
+			console.error('Could not get user email from Google');
+			return NextResponse.redirect(new URL('/settings?error=no_email', request.url));
+		}
+
+		// Store tokens in database for this user
+		const { error: dbError } = await supabase
 			.from('gmail_accounts')
 			.upsert({
 				user_id: user.id,
-				email: user.email!,
+				email: userInfo.email,
 				access_token: tokens.access_token!,
 				refresh_token: tokens.refresh_token!,
 				token_expires_at: new Date(tokens.expiry_date!).toISOString(),
-				updated_at: new Date().toISOString(),
-			})
+				updated_at: new Date().toISOString()
+			});
 
 		if (dbError) {
-			console.error('Database error:', dbError)
-			throw dbError
+			console.error('Database error:', dbError);
+			return NextResponse.redirect(new URL('/settings?error=db_error', request.url));
 		}
 
-		return NextResponse.redirect(new URL('/dashboard?success=gmail_connected', request.url))
+		return NextResponse.redirect(new URL('/settings?step=2&scan=true', request.url));
 	} catch (error) {
-		console.error('Failed to process Gmail callback:', error)
-		return NextResponse.redirect(new URL('/dashboard?error=gmail_auth_failed', request.url))
+		console.error('Callback error:', error);
+		return NextResponse.redirect(new URL('/settings?error=callback_failed', request.url));
 	}
 }
