@@ -43,6 +43,7 @@ interface EmailResponse {
         from: string;
         date: string;
         hasAttachments: boolean;
+        isMedical: boolean;
     }>;
     nextPageToken: string | null;
     error?: string;
