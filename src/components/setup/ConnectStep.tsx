@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useTranslation } from '@/hooks/useTranslation'
@@ -6,6 +6,7 @@ import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/client/utils'
 import type { Preferences } from '@/hooks/usePreferences'
 import { ScanProgress } from './ScanProgress'
+import { useSearchParams } from 'next/navigation'
 
 function GoogleLogo() {
     return (
@@ -35,22 +36,70 @@ interface ConnectStepProps {
     preferences: Preferences | null
 }
 
+interface EmailResponse {
+    messages: Array<{
+        id: string;
+        subject: string;
+        from: string;
+        date: string;
+        hasAttachments: boolean;
+    }>;
+    nextPageToken: string | null;
+    error?: string;
+}
+
 export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
     const { t } = useTranslation(preferences?.language || 'en')
     const [isExpanded, setIsExpanded] = useState(false)
     const [isScanning, setIsScanning] = useState(false)
+    const searchParams = useSearchParams()
+
+    useEffect(() => {
+        const shouldScan = searchParams.get('scan') === 'true';
+
+        if (shouldScan && !isScanning) {
+            setIsScanning(true);
+            startScan();
+        }
+    }, [searchParams]);
+
+    const startScan = async () => {
+        try {
+            let pageToken: string | null = null;
+            let totalEmails = 0;
+
+            do {
+                const url = pageToken
+                    ? `/api/gmail/test?pageToken=${pageToken}`
+                    : '/api/gmail/test';
+
+                const response = await fetch(url);
+                const data: EmailResponse = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to fetch emails');
+                }
+
+                console.log('Fetched batch of emails:', data.messages);
+                totalEmails += data.messages.length;
+
+                // Get token for next batch
+                pageToken = data.nextPageToken;
+
+                // For now, let's stop after processing 50 emails
+                if (totalEmails >= 50) break;
+
+            } while (pageToken);
+
+            console.log('Finished scanning, total emails processed:', totalEmails);
+        } catch (error) {
+            console.error('Error scanning emails:', error);
+            setIsScanning(false);
+        }
+    };
 
     const handleConnect = () => {
-        const params = new URLSearchParams({
-            client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
-            redirect_uri: process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI!,
-            response_type: 'code',
-            scope: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email',
-            access_type: 'offline',
-            prompt: 'consent'
-        });
-
-        window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+        startScan()
     }
 
     const handleSkip = () => {

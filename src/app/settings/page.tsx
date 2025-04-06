@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card } from "@/components/ui/card"
 import { usePreferences, type Preferences } from '@/hooks/usePreferences'
 import { Breadcrumb, type BreadcrumbStep } from '@/components/ui/breadcrumb'
@@ -8,10 +8,15 @@ import { useTranslation } from '@/hooks/useTranslation'
 import { PreferencesStep } from '@/components/setup/PreferencesStep'
 import { ConnectStep } from '@/components/setup/ConnectStep'
 import { ReadyStep } from '@/components/setup/ReadyStep'
+import { useSearchParams } from 'next/navigation'
 
 export default function SettingsPage() {
+    const searchParams = useSearchParams()
     const { preferences: initialPreferences, loading: prefsLoading, error: prefsError } = usePreferences()
-    const [currentStep, setCurrentStep] = useState(1)
+    const [currentStep, setCurrentStep] = useState(() => {
+        const step = searchParams.get('step')
+        return step ? parseInt(step) : 1
+    })
     const [preferences, setPreferences] = useState<Preferences | null>(null)
     const { t } = useTranslation(preferences?.language || initialPreferences?.language || 'en')
 
