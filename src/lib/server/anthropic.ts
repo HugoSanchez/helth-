@@ -22,6 +22,13 @@ export interface DocumentAnalysis {
     date?: string;
 }
 
+export interface EmailClassificationResult {
+    id: string;
+    isMedical: boolean;
+    confidence: number;
+    reason?: string;
+}
+
 /**
  * Analyzes a PDF document using Claude's API
  * Uses function calling to ensure structured response
@@ -183,5 +190,94 @@ export async function analyzeDocument(base64Pdf: string, language: string = 'en'
     } catch (error) {
         console.error('[Claude] Error in analyzeDocument:', error);
         throw error;
+    }
+}
+
+/**
+ * Classifies a batch of emails using Claude's API to determine if they are medical-related
+ *
+ * @param emails - Array of email objects containing id, subject, and snippet
+ * @returns Array of classification results
+ */
+export async function classifyEmails(emails: Array<{ id: string, subject: string, snippet: string }>): Promise<EmailClassificationResult[]> {
+    try {
+        console.log('[Claude] Classifying batch of emails:', emails.length);
+        const response = await anthropic.beta.messages.create({
+            model: 'claude-3-7-sonnet-20250219',
+            max_tokens: 4096,
+            tools: [{
+                name: "classifyEmail",
+                description: "Classify every single email as medical or non-medical",
+                input_schema: {
+                    type: "object",
+                    properties: {
+                        id: {
+                            type: "string",
+                            description: "The email ID that was passed"
+                        },
+                        isMedical: {
+                            type: "boolean",
+                            description: "Whether the email is medical-related"
+                        },
+                        confidence: {
+                            type: "number",
+                            description: "Confidence score between 0.0 and 1.0"
+                        }
+                    },
+                    required: ["id", "isMedical", "confidence"]
+                }
+            }],
+            messages: [
+                {
+                    role: 'user',
+                    content: `Classify each of these emails as medical or non-medical. For each email, call the classifyEmail function with your classification. Please return all emails at once instead of going one by one.
+
+							Medical emails are those that:
+							- Contain medical terminology
+							- Discuss health conditions or treatments
+							- Are from healthcare providers
+							- Contain test results or appointments
+							- Discuss insurance claims
+
+							Here are the emails:
+							${emails.map(email => `
+							ID: ${email.id}
+							Subject: ${email.subject}
+							Content: ${email.snippet}
+							---`).join('\n')}
+
+					Remember: Call classifyEmail once for each email with your classification.`
+                }
+            ],
+            betas: ["token-efficient-tools-2025-02-19"]
+        });
+
+        // Parse Claude's response
+        const results: EmailClassificationResult[] = [];
+		console.log('RESPONSE CONTENT:', response.content)
+		return []
+        for (const content of response.content) {
+            // @ts-ignore - Beta feature not yet in types
+            if (content.type === 'tool_use') {
+                // @ts-ignore - Beta feature not yet in types
+                results.push(content.input);
+            }
+        }
+
+        // If we got no results, return defaults
+        if (results.length === 0) {
+            console.log('[Claude] No classifications found in response');
+            throw new Error('No classifications received from Claude');
+        }
+
+        console.log('[Claude] Classification results:', results);
+        return results;
+    } catch (error) {
+        console.error('[Claude] Error in classifyEmails:', error);
+        return emails.map(email => ({
+            id: email.id,
+            isMedical: false,
+            confidence: 0.5
+        }));
     }
 }
