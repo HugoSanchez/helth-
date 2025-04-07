@@ -254,8 +254,6 @@ export async function classifyEmails(emails: Array<{ id: string, subject: string
 
         // Parse Claude's response
         const results: EmailClassificationResult[] = [];
-		console.log('RESPONSE CONTENT:', response.content)
-		return []
         for (const content of response.content) {
             // @ts-ignore - Beta feature not yet in types
             if (content.type === 'tool_use') {

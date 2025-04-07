@@ -88,19 +88,13 @@ export async function GET(request: Request) {
                 };
             })
         );
-        console.log('MESSAGE DETAILS:', messageDetails);
-        console.log(`Number of messages to classify: ${messageDetails.length}`);
 
         // Classify all emails in one batch
         const classifications = await classifyEmails(messageDetails);
-        console.log('CLASSIFICATIONS:', classifications);
-        console.log(`Number of classifications received: ${classifications.length}`);
+		console.log('CLASSIFICATIONS:', classifications);
 
-        // Only return medical emails - using ID matching instead of array indices
-        const medicalMessages = messageDetails.filter(msg =>
-            classifications.find(c => c.id === msg.id)?.isMedical || false
-        );
-        console.log(`Number of medical messages found: ${medicalMessages.length}`);
+        // Only return medical emails
+        const medicalMessages = messageDetails.filter((msg, index) => classifications[index].isMedical);
 
         return NextResponse.json({
             messages: medicalMessages,
