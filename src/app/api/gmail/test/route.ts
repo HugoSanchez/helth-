@@ -1,31 +1,33 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
 import { google } from 'googleapis'
 import { classifyEmails } from '@/lib/server/anthropic'
 
-export async function GET(request: Request) {
+// Helper function to send SSE updates
+async function sendUpdate(writer: WritableStreamDefaultWriter<any>, update: any) {
+    const encoder = new TextEncoder();
+    await writer.write(
+        encoder.encode(`data: ${JSON.stringify(update)}\n\n`)
+    );
+}
+
+interface ProcessingStats {
+    totalProcessed: number;
+    totalMedical: number;
+}
+
+async function processEmails(
+    writer: WritableStreamDefaultWriter<any>,
+    pageToken: string | null,
+    stats: ProcessingStats
+) {
     try {
-        // Get pageToken and page count from URL
-        const { searchParams } = new URL(request.url)
-        const pageToken = searchParams.get('pageToken')
-        const currentPage = parseInt(searchParams.get('page') || '1')
-
-        // Stop after 5 pages
-        if (currentPage > 5) {
-            return NextResponse.json({
-                messages: [],
-                nextPageToken: null,
-                message: 'Maximum page limit reached'
-            });
-        }
-
         // Get authenticated user
         const supabase = createRouteHandlerClient({ cookies });
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
         if (authError || !user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            throw new Error('Unauthorized');
         }
 
         // Get user's Gmail tokens
@@ -36,7 +38,7 @@ export async function GET(request: Request) {
             .single();
 
         if (tokenError || !gmailAccount) {
-            return NextResponse.json({ error: 'Gmail account not connected' }, { status: 400 });
+            throw new Error('Gmail account not connected');
         }
 
         // Initialize Gmail client
@@ -53,6 +55,16 @@ export async function GET(request: Request) {
 
         const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
+        // Send progress update
+        await sendUpdate(writer, {
+            type: 'progress',
+            data: {
+                status: 'Fetching emails...',
+                emailsProcessed: stats.totalProcessed,
+                medicalEmailsFound: stats.totalMedical
+            }
+        });
+
         // Fetch emails with pageToken if provided
         const response = await gmail.users.messages.list({
             userId: 'me',
@@ -62,11 +74,20 @@ export async function GET(request: Request) {
         });
 
         if (!response.data.messages) {
-            return NextResponse.json({
-                messages: [],
-                nextPageToken: null
-            });
+            return {
+                nextPageToken: null,
+                stats
+            };
         }
+
+        await sendUpdate(writer, {
+            type: 'progress',
+            data: {
+                status: 'Processing emails...',
+                emailsProcessed: stats.totalProcessed,
+                medicalEmailsFound: stats.totalMedical
+            }
+        });
 
         // Get details for each message
         const messageDetails = await Promise.all(
@@ -89,25 +110,104 @@ export async function GET(request: Request) {
             })
         );
 
-        // Classify all emails in one batch
-        const classifications = await classifyEmails(messageDetails);
-		console.log('CLASSIFICATIONS:', classifications);
+        // Update total processed count
+        stats.totalProcessed += messageDetails.length;
 
-        // Only return medical emails
-        const medicalMessages = messageDetails.filter((msg, index) => classifications[index].isMedical);
-
-        return NextResponse.json({
-            messages: medicalMessages,
-            nextPageToken: response.data.nextPageToken || null,
-            currentPage,
-            hasMore: currentPage < 5 && !!response.data.nextPageToken
+        await sendUpdate(writer, {
+            type: 'progress',
+            data: {
+                status: 'Classifying emails...',
+                emailsProcessed: stats.totalProcessed,
+                medicalEmailsFound: stats.totalMedical
+            }
         });
 
-    } catch (error) {
-        console.error('Error fetching emails:', error);
-        return NextResponse.json(
-            { error: 'Failed to fetch emails' },
-            { status: 500 }
+        // Classify all emails in one batch
+        const classifications = await classifyEmails(messageDetails);
+
+        // Only return medical emails
+        const medicalMessages = messageDetails.filter(msg =>
+            classifications.find(c => c.id === msg.id)?.isMedical || false
         );
+
+        // Update total medical count
+        stats.totalMedical += medicalMessages.length;
+
+        await sendUpdate(writer, {
+            type: 'progress',
+            data: {
+                status: 'Found medical emails',
+                emailsProcessed: stats.totalProcessed,
+                medicalEmailsFound: stats.totalMedical
+            }
+        });
+
+        return {
+            nextPageToken: response.data.nextPageToken || null,
+            stats
+        };
+    } catch (error) {
+        console.error('Error in processEmails:', error);
+        throw error;
     }
+}
+
+export async function GET() {
+    // Set up streaming
+    const stream = new TransformStream();
+    const writer = stream.writable.getWriter();
+
+    // Initialize processing stats
+    const stats: ProcessingStats = {
+        totalProcessed: 0,
+        totalMedical: 0
+    };
+
+    // Process in background
+    (async () => {
+        try {
+            let nextToken: string | null = null;
+            let pageCount = 0;
+            const MAX_PAGES = 5;
+
+            do {
+                // Process current page
+                const result = await processEmails(writer, nextToken, stats);
+                nextToken = result.nextPageToken;
+                pageCount++;
+
+                // Continue until we hit the page limit or run out of emails
+            } while (nextToken && pageCount < MAX_PAGES);
+
+            // Send final complete update
+            await sendUpdate(writer, {
+                type: 'complete',
+                data: {
+                    status: 'completed',
+                    emailsProcessed: stats.totalProcessed,
+                    medicalEmailsFound: stats.totalMedical
+                }
+            });
+
+            await writer.close();
+        } catch (error) {
+            console.error('Error processing emails:', error);
+            await sendUpdate(writer, {
+                type: 'error',
+                data: {
+                    error: error instanceof Error ? error.message : 'Failed to process emails'
+                }
+            });
+            await writer.close();
+        }
+    })();
+
+    // Return the stream
+    return new Response(stream.readable, {
+        headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+        },
+    });
 }

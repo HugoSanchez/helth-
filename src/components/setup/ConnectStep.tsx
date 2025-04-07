@@ -36,17 +36,11 @@ interface ConnectStepProps {
     preferences: Preferences | null
 }
 
-interface EmailResponse {
-    messages: Array<{
-        id: string;
-        subject: string;
-        from: string;
-        date: string;
-        hasAttachments: boolean;
-        isMedical: boolean;
-    }>;
-    nextPageToken: string | null;
-    error?: string;
+interface ScanStatus {
+    status: 'idle' | 'scanning' | 'completed' | 'error';
+    total_emails: number;
+    processed_emails: number;
+    total_documents: number;
 }
 
 export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
@@ -54,6 +48,13 @@ export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
     const [isExpanded, setIsExpanded] = useState(false)
     const [isScanning, setIsScanning] = useState(false)
     const searchParams = useSearchParams()
+    const [status, setStatus] = useState<ScanStatus>({
+        status: 'idle',
+        total_emails: 0,
+        processed_emails: 0,
+        total_documents: 0
+    })
+    const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
         const shouldScan = searchParams.get('scan') === 'true';
@@ -66,41 +67,56 @@ export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
 
     const startScan = async () => {
         try {
-            let pageToken: string | null = null;
-            let totalEmails = 0;
+            const response = await fetch('/api/gmail/test');
+            if (!response.ok) {
+                throw new Error('Failed to start scan');
+            }
 
-            do {
-                const url = pageToken
-                    ? `/api/gmail/test?pageToken=${pageToken}`
-                    : '/api/gmail/test';
+            const reader = response.body!.getReader();
+            const decoder = new TextDecoder();
 
-                const response = await fetch(url);
-                const data: EmailResponse = await response.json();
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
 
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to fetch emails');
+                const events = decoder.decode(value).split('\n\n');
+                for (const event of events) {
+                    if (!event.trim() || !event.startsWith('data: ')) continue;
+
+                    const data = JSON.parse(event.replace('data: ', ''));
+                    console.log('Received event:', data);
+
+                    if (data.type === 'progress') {
+                        setStatus({
+                            status: 'scanning',
+                            total_emails: 0,
+                            processed_emails: data.data.emailsProcessed || 0,
+                            total_documents: data.data.medicalEmailsFound || 0
+                        });
+                    } else if (data.type === 'complete') {
+                        setStatus({
+                            status: 'completed',
+                            total_emails: 0,
+                            processed_emails: data.data.emailsProcessed || 0,
+                            total_documents: data.data.medicalEmailsFound || 0
+                        });
+                        onComplete();
+                    } else if (data.type === 'error') {
+                        setError(data.data.error);
+                        setIsScanning(false);
+                    }
                 }
-
-                console.log('Fetched batch of emails:', data.messages);
-                totalEmails += data.messages.length;
-
-                // Get token for next batch
-                pageToken = data.nextPageToken;
-
-                // For now, let's stop after processing 50 emails
-                if (totalEmails >= 50) break;
-
-            } while (pageToken);
-
-            console.log('Finished scanning, total emails processed:', totalEmails);
+            }
         } catch (error) {
             console.error('Error scanning emails:', error);
+            setError(error instanceof Error ? error.message : 'Failed to scan emails');
             setIsScanning(false);
         }
     };
 
     const handleConnect = () => {
-        startScan()
+        setIsScanning(true);
+        startScan();
     }
 
     const handleSkip = () => {
@@ -108,7 +124,11 @@ export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
     }
 
     if (isScanning) {
-        return <ScanProgress language={preferences?.language || 'en'} />
+        return <ScanProgress
+            language={preferences?.language || 'en'}
+            status={status}
+            error={error}
+        />;
     }
 
     return (
@@ -150,9 +170,10 @@ export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
                     <Button
                         className="w-full h-12 gap-4"
                         onClick={handleConnect}
+                        disabled={isScanning}
                     >
                         <GoogleLogo />
-                        {t('dashboard.scanButton')}
+                        {isScanning ? t('setup.connect.starting') : t('dashboard.scanButton')}
                     </Button>
 
                     <div>
