@@ -14,24 +14,23 @@ export function useTranslation(initialLanguage: Language = 'en') {
 
     const t = (key: TranslationKey) => {
         try {
-            // Split the key by dots to handle nested paths
-            const keys = key.split('.') as (keyof typeof translations.en)[];
+            const keys = key.split('.');
             let value: any = translations[language];
 
-            // Traverse the nested object
             for (const k of keys) {
+                if (value === undefined || !(k in value)) {
+                    throw new Error(`Translation not found for key: ${key}`);
+                }
                 value = value[k];
             }
 
-            // If the value is an object with language keys, return the correct language
-            if (value && typeof value === 'object' && language in value) {
-                return value[language];
+            if (typeof value === 'string') {
+                return value;
             }
 
-            return value;
+            throw new Error(`Invalid translation value for key: ${key}`);
         } catch (error) {
-            console.error(`Translation key not found: ${key}`);
-            // Return the key as fallback
+            console.error('Translation error:', error);
             return key;
         }
     };
