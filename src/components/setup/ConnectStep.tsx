@@ -67,46 +67,80 @@ export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
 
     const startScan = async () => {
         try {
-            const response = await fetch('/api/gmail/test');
-            if (!response.ok) {
+            // Initialize scan session
+            const initResponse = await fetch('/api/gmail/test', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({})  // Empty body for initial request
+            });
+
+            if (!initResponse.ok) {
                 throw new Error('Failed to start scan');
             }
 
-            const reader = response.body!.getReader();
-            const decoder = new TextDecoder();
+            const initData = await initResponse.json();
+            let sessionId = initData.sessionId;
+            let nextPageToken = initData.nextPageToken;
+            let batchCount = 0;
+            const MAX_BATCHES = 2;  // Limit to 2 batches for testing
 
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
+            // Update status with initial stats
+            setStatus({
+                status: 'scanning',
+                total_emails: 0,
+                processed_emails: initData.stats.processed,
+                total_documents: initData.stats.documents
+            });
 
-                const events = decoder.decode(value).split('\n\n');
-                for (const event of events) {
-                    if (!event.trim() || !event.startsWith('data: ')) continue;
+            // Process batches until complete or max batches reached
+            while (batchCount < MAX_BATCHES && !initData.isComplete) {
+                // Process next batch
+                const batchResponse = await fetch('/api/gmail/test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sessionId,
+                        pageToken: nextPageToken
+                    })
+                });
 
-                    const data = JSON.parse(event.replace('data: ', ''));
-                    console.log('Received event:', data);
-
-                    if (data.type === 'progress') {
-                        setStatus({
-                            status: 'scanning',
-                            total_emails: 0,
-                            processed_emails: data.data.emailsProcessed || 0,
-                            total_documents: data.data.medicalEmailsFound || 0
-                        });
-                    } else if (data.type === 'complete') {
-                        setStatus({
-                            status: 'completed',
-                            total_emails: 0,
-                            processed_emails: data.data.emailsProcessed || 0,
-                            total_documents: data.data.medicalEmailsFound || 0
-                        });
-                        onComplete();
-                    } else if (data.type === 'error') {
-                        setError(data.data.error);
-                        setIsScanning(false);
-                    }
+                if (!batchResponse.ok) {
+                    throw new Error('Failed to process batch');
                 }
+
+                const batchData = await batchResponse.json();
+
+                // Update status with latest stats
+                setStatus({
+                    status: batchData.isComplete ? 'completed' : 'scanning',
+                    total_emails: 0,  // We don't know the total
+                    processed_emails: batchData.stats.processed,
+                    total_documents: batchData.stats.documents
+                });
+
+                // Check if we should continue
+                if (batchData.isComplete) {
+                    break;
+                }
+
+                nextPageToken = batchData.nextPageToken;
+                batchCount++;
+
+                // Add a small delay between batches to prevent rate limiting
+                await new Promise(resolve => setTimeout(resolve, 1000));
             }
+
+            // Mark as completed after all batches
+            setStatus(prev => ({
+                ...prev,
+                status: 'completed'
+            }));
+
+            onComplete();
         } catch (error) {
             console.error('Error scanning emails:', error);
             setError(error instanceof Error ? error.message : 'Failed to scan emails');
@@ -114,9 +148,17 @@ export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
         }
     };
 
-    const handleConnect = () => {
-        setIsScanning(true);
-        startScan();
+    const handleConnect = async () => {
+		const params = new URLSearchParams({
+			client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+			redirect_uri: process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI!,
+			response_type: 'code',
+			scope: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email',
+			access_type: 'offline',
+			prompt: 'consent'
+		});
+
+		window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
     }
 
     const handleSkip = () => {

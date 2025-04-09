@@ -268,7 +268,7 @@ export async function classifyEmails(emails: Array<{ id: string, subject: string
             throw new Error('No classifications received from Claude');
         }
 
-        console.log('[Claude] Classification results:', results);
+        console.log('[Claude] Classification complete');
         return results;
     } catch (error) {
         console.error('[Claude] Error in classifyEmails:', error);
