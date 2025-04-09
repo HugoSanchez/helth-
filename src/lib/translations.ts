@@ -20,18 +20,14 @@ export const translations = {
             steps: {
                 preferences: "Preferences",
                 connect: "Connect Gmail",
+                scan: "Scan Documents",
                 ready: "Upload a file"
             },
             connect: {
                 title: "Connect your Gmail",
                 description: "Connect your Gmail account to let helth automatically scan your inbox for medical documents. This is an optional step.",
-                scanTitle: "Scan your documents",
-                scanDescription: "Click on scan documents to start the automatic collection of medical documents from your inbox.",
-                skipDescription: "You can always connect your Gmail account later from your dashboard.",
                 whyConnect: "Why connect Gmail?",
                 connectButton: "Connect Gmail Account",
-                connected: "Gmail Connected",
-                scanButton: "Scan for Medical Documents",
                 benefits: {
                     title: "Benefits of connecting your Gmail:",
                     items: [
@@ -40,7 +36,12 @@ export const translations = {
                         "Automatically find medical documents in your inbox",
                         "Secure and private - we only access medical-related emails and we only store the documents you asks us to keep"
                     ]
-                },
+                }
+            },
+            scan: {
+                title: "Scan your documents",
+                description: "Click on scan documents to start the automatic collection of medical documents from your inbox.",
+                scanButton: "Scan Medical Documents",
                 starting: "Starting email scan...",
                 scanningDescription: "This process can take a few minutes. Please don't close this tab.",
                 emails: "emails processed",
@@ -164,18 +165,14 @@ export const translations = {
             steps: {
                 preferences: "Preferencias",
                 connect: "Conecta Gmail",
+                scan: "Escanear Documentos",
                 ready: "Sube un archivo"
             },
             connect: {
                 title: "Conecta tu Gmail",
                 description: "Conecta tu cuenta de Gmail si quieres que helth escanee tu correo para extraer tus documentos médicos por ti. Este es un paso opcional.",
-                scanTitle: "Escanea tus documentos",
-                scanDescription: "Haz click en escanear documentos para iniciar el proceso de recolección automática de documentos médicos.",
-                skipDescription: "Siempre puedes conectar tu cuenta de Gmail más tarde desde tu panel de control.",
                 whyConnect: "¿Por qué conectar Gmail?",
                 connectButton: "Conectar Gmail",
-                connected: "Gmail Conectado",
-                scanButton: "Escanear Documentos Médicos",
                 benefits: {
                     title: "Beneficios de conectar tu Gmail y cómo funciona:",
                     items: [
@@ -183,7 +180,12 @@ export const translations = {
                         "No guardamos ni tus correos ni tus credenciales",
                         "Encuentramos automáticamente documentos médicos en tu bandeja de entrada sin que tengas que hacer nada."
                     ]
-                },
+                }
+            },
+            scan: {
+                title: "Escanea tus documentos",
+                description: "Haz click en escanear documentos para iniciar el proceso de recolección automática de documentos médicos.",
+                scanButton: "Escanear Documentos Médicos",
                 starting: "Iniciando escaneo de correos...",
                 scanningDescription: "Este proceso puede tardar unos minutos. Por favor, no cierres esta pestaña.",
                 emails: "correos procesados",

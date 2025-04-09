@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useTranslation } from '@/hooks/useTranslation'
-import { ChevronRight, Search } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/client/utils'
 import type { Preferences } from '@/hooks/usePreferences'
-import { ScanProgress } from './ScanProgress'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 
 function GoogleLogo() {
     return (
@@ -45,91 +44,10 @@ interface ConnectStepProps {
     preferences: Preferences | null
 }
 
-interface ScanStatus {
-    status: 'idle' | 'processing' | 'completed';
-	error: string | null;
-    processed_emails: number;
-    total_documents: number;
-	nextPageToken: string | null;
-	sessionId: string | null;
-}
-
 export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
     const { t } = useTranslation(preferences?.language || 'en')
     const [isExpanded, setIsExpanded] = useState(false)
-    const [isScanning, setIsScanning] = useState(false)
-    const searchParams = useSearchParams()
     const router = useRouter()
-    const [status, setStatus] = useState<ScanStatus>({
-        status: 'idle',
-        processed_emails: 0,
-        total_documents: 0,
-        nextPageToken: null,
-        sessionId: null,
-        error: null
-    })
-    const [error, setError] = useState<string | null>(null)
-
-    const handleScan = async () => {
-        setIsScanning(true)
-        try {
-            if (!status.sessionId &&
-                !status.nextPageToken &&
-                !status.error &&
-                status.status == 'completed') {
-                await triggerScan(null, null)
-            } else if (status.status == 'completed') {
-                onComplete()
-            } else {
-                await triggerScan(status.nextPageToken, status.sessionId)
-            }
-        } catch (error) {
-            setError(error instanceof Error ? error.message : 'Failed to scan emails')
-            setIsScanning(false)
-        }
-    }
-
-	const triggerScan = async (nextPageToken: string | null, sessionId: string | null) => {
-		let requestObject = {}
-		if (nextPageToken && sessionId) requestObject = {nextPageToken, sessionId}
-
-		try {
-			// Initialize scan session
-            const scanResponse = await fetch('/api/gmail/scan', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestObject)  // Empty body for initial request
-            });
-
-            if (!scanResponse.ok) {
-                throw new Error('Failed to start scan');
-            }
-
-            const sessionData = await scanResponse.json();
-			console.log('sessionData', sessionData)
-
-            // Update status with initial stats
-            setStatus({
-                status: sessionData.complete || !sessionData.nextPageToken ? 'completed' : 'processing',
-                processed_emails: sessionData.stats.processed,
-                total_documents: sessionData.stats.documents,
-				nextPageToken: sessionData.nextPageToken || null,
-				sessionId: sessionData.sessionId || null,
-				error: sessionData.success ? null : 'Failed to scan emails'
-            });
-
-			return sessionData
-
-		} catch (error) {
-			console.error('Error scanning emails:', error);
-			setError(error instanceof Error ? error.message : 'Failed to scan emails');
-			setIsScanning(false);
-			return null
-		}
-
-	}
 
     const handleConnect = async () => {
         const params = new URLSearchParams({
@@ -145,31 +63,18 @@ export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
     }
 
     const handleSkip = () => {
+        // First update the URL to include skipped parameter
+        router.push('/settings?step=3&skipped=true')
+        // Then call onComplete to update the step in the parent
         onComplete()
-    }
-
-    if (isScanning) {
-        return <ScanProgress
-            language={preferences?.language || 'en'}
-            status={status}
-            error={error}
-        />;
     }
 
     return (
         <>
             <CardHeader>
-                <CardTitle className="text-4xl py-2 font-bold">
-                    {searchParams.get('scan') === 'true'
-                        ? t('setup.connect.scanTitle')
-                        : t('setup.connect.title')
-                    }
-                </CardTitle>
+                <CardTitle className="text-4xl py-2 font-bold">{t('setup.connect.title')}</CardTitle>
                 <CardDescription className="text-lg font-light">
-                    {searchParams.get('scan') === 'true'
-                        ? t('setup.connect.scanDescription')
-                        : t('setup.connect.description')
-                    }
+                    {t('setup.connect.description')}
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -201,24 +106,13 @@ export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
                     </div>
 
                     <div className="space-y-4">
-                        {searchParams.get('scan') !== 'true' ? (
-                            <Button
-                                className="w-full h-12 gap-4"
-                                onClick={handleConnect}
-                            >
-                                <GoogleLogo />
-                                {t('setup.connect.connectButton')}
-                            </Button>
-                        ) : (
-                            <Button
-                                className="w-full h-12 gap-4"
-                                onClick={handleScan}
-                                disabled={isScanning}
-                            >
-                                <Search className="h-5 w-5" />
-                                {isScanning ? t('setup.connect.starting') : t('setup.connect.scanButton')}
-                            </Button>
-                        )}
+                        <Button
+                            className="w-full h-12 gap-4"
+                            onClick={handleConnect}
+                        >
+                            <GoogleLogo />
+                            {t('setup.connect.connectButton')}
+                        </Button>
                     </div>
 
                     <div>

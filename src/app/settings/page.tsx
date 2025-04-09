@@ -7,7 +7,7 @@ import { Breadcrumb, type BreadcrumbStep } from '@/components/ui/breadcrumb'
 import { useTranslation } from '@/hooks/useTranslation'
 import { PreferencesStep } from '@/components/setup/PreferencesStep'
 import { ConnectStep } from '@/components/setup/ConnectStep'
-import { ReadyStep } from '@/components/setup/ReadyStep'
+import { FinalStep } from '@/components/setup/FinalStep'
 import { useSearchParams } from 'next/navigation'
 
 export default function SettingsPage() {
@@ -19,6 +19,9 @@ export default function SettingsPage() {
     })
     const [preferences, setPreferences] = useState<Preferences | null>(null)
     const { t } = useTranslation(preferences?.language || initialPreferences?.language || 'en')
+
+    // Check if user has skipped scanning
+    const skipped = searchParams.get('skipped') === 'true'
 
     // Initialize preferences when they're first loaded
     if (!preferences && initialPreferences) {
@@ -39,7 +42,7 @@ export default function SettingsPage() {
             onClick: currentStep === 3 ? () => setCurrentStep(2) : undefined
         },
         {
-            label: t('setup.steps.ready'),
+            label: skipped ? t('setup.steps.ready') : t('setup.steps.scan'),
             active: currentStep === 3,
             completed: false
         }
@@ -89,7 +92,8 @@ export default function SettingsPage() {
                         preferences={preferences}
                     />
                 ) : (
-                    <ReadyStep
+                    <FinalStep
+                        onComplete={() => {}}
                         preferences={preferences}
                     />
                 )}

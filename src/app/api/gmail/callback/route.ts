@@ -59,7 +59,7 @@ export async function GET(request: Request) {
 			return NextResponse.redirect(new URL('/settings?error=db_error', request.url));
 		}
 
-		return NextResponse.redirect(new URL('/settings?step=2&scan=true', request.url));
+		return NextResponse.redirect(new URL('/settings?step=3', request.url));
 	} catch (error) {
 		console.error('Callback error:', error);
 		return NextResponse.redirect(new URL('/settings?error=callback_failed', request.url));
