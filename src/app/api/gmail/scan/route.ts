@@ -318,6 +318,9 @@ async function markSessionComplete(sessionId: string) {
  * @returns JSON response with processing results or error
  */
 export async function POST(request: Request) {
+    // Declare sessionId outside try block to make it accessible in catch
+    let sessionId: string | undefined;
+
     try {
         // STEP 1: Authentication Setup
         // -------------------------------------
@@ -377,8 +380,7 @@ export async function POST(request: Request) {
         // STEP 5.1: Session Management
         // -------------------------------------
         // Track processing progress across multiple batches using a session
-        // This allows us to maintain state between API calls and handle pagination
-        let sessionId = requestedSessionId
+        sessionId = requestedSessionId
         let stats: ProcessingStats
 
         if (!sessionId) {
@@ -432,6 +434,9 @@ export async function POST(request: Request) {
         // STEP 6: Email Processing
         // -------------------------------------
         // Process single batch and get next page token
+        if (!sessionId) {
+            throw new Error('Session ID is required for processing')
+        }
         const { nextPageToken } = await processEmailBatch(gmail, pageToken, stats, user.id, sessionId)
 
         // STEP 7: Response
@@ -450,6 +455,13 @@ export async function POST(request: Request) {
         // -------------------------------------
         // Log error for debugging and return appropriate error response
         console.error('Error processing emails:', error)
+
+        // Clean up tokens on critical error if we have a valid session
+        if (typeof sessionId === 'string') {
+            await markSessionComplete(sessionId)
+        }
+
+		// Response to client
         return NextResponse.json(
             { error: error instanceof Error ? error.message : 'Internal server error' },
             { status: 500 }

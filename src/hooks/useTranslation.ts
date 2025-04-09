@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import { translations, Language } from '@/lib/translations';
 
-type NestedKeyOf<ObjectType extends object> = {
-    [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends object
-        ? `${Key}` | `${Key}.${NestedKeyOf<ObjectType[Key]>}`
-        : `${Key}`
-}[keyof ObjectType & (string | number)]
-
-type TranslationKey = NestedKeyOf<typeof translations.en>
+type NestedValue<T, K extends string> = K extends `${infer First}.${infer Rest}`
+    ? First extends keyof T
+        ? T[First] extends object
+            ? NestedValue<T[First], Rest>
+            : never
+        : never
+    : K extends keyof T
+        ? T[K]
+        : never;
 
 export function useTranslation(initialLanguage: Language = 'en') {
     const [language, setLanguage] = useState<Language>(initialLanguage);
 
-    const t = (key: TranslationKey) => {
+    const t = <K extends keyof typeof translations.en>(key: K | string) => {
         try {
             const keys = key.split('.');
             let value: any = translations[language];
@@ -24,11 +26,7 @@ export function useTranslation(initialLanguage: Language = 'en') {
                 value = value[k];
             }
 
-            if (typeof value === 'string') {
-                return value;
-            }
-
-            throw new Error(`Invalid translation value for key: ${key}`);
+            return value;
         } catch (error) {
             console.error('Translation error:', error);
             return key;

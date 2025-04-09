@@ -6,7 +6,7 @@ import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/client/utils'
 import type { Preferences } from '@/hooks/usePreferences'
 import { ScanProgress } from './ScanProgress'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 
 function GoogleLogo() {
     return (
@@ -31,16 +31,27 @@ function GoogleLogo() {
     )
 }
 
+/**
+ * 	Scan Response Object {
+* 		success: true / false,
+		complete: true / false,
+		stats,
+		nextPageToken,
+		sessionId
+	}
+ */
 interface ConnectStepProps {
     onComplete: () => void
     preferences: Preferences | null
 }
 
 interface ScanStatus {
-    status: 'idle' | 'scanning' | 'completed' | 'error';
-    total_emails: number;
+    status: 'idle' | 'processing' | 'completed';
+	error: string | null;
     processed_emails: number;
     total_documents: number;
+	nextPageToken: string | null;
+	sessionId: string | null;
 }
 
 export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
@@ -48,105 +59,79 @@ export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
     const [isExpanded, setIsExpanded] = useState(false)
     const [isScanning, setIsScanning] = useState(false)
     const searchParams = useSearchParams()
+    const router = useRouter()
     const [status, setStatus] = useState<ScanStatus>({
         status: 'idle',
-        total_emails: 0,
         processed_emails: 0,
-        total_documents: 0
+        total_documents: 0,
+		nextPageToken: null,
+		sessionId: null,
+		error: null
     })
     const [error, setError] = useState<string | null>(null)
 
-    useEffect(() => {
-        const shouldScan = searchParams.get('scan') === 'true';
+    const handleScan = async () => {
+        if (!status.sessionId &&
+			!status.nextPageToken &&
+			!status.error &&
+			status.status == 'completed'){
+			await triggerScan(null, null)
+		} else if (status.status == 'completed'){
+			onComplete()
+		} else {
+			await triggerScan(status.nextPageToken, status.sessionId)
+		}
+    };
 
-        if (shouldScan && !isScanning) {
-            setIsScanning(true);
-            startScan();
-        }
-    }, [searchParams]);
+    // Initialize scan if needed
+    if (searchParams.get('scan') === 'true' && !isScanning && status.status !== 'completed') {
+        setIsScanning(true)
+        handleScan()
+        // Remove the scan parameter to prevent re-triggering
+        router.replace('?')
+    }
 
-    const startScan = async () => {
-        try {
-            // Initialize scan session
-            const initResponse = await fetch('/api/gmail/test', {
+	const triggerScan = async (nextPageToken: string | null, sessionId: string | null) => {
+		let requestObject = {}
+		if (nextPageToken && sessionId) requestObject = {nextPageToken, sessionId}
+
+		try {
+			// Initialize scan session
+            const scanResponse = await fetch('/api/gmail/scan', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({})  // Empty body for initial request
+                body: JSON.stringify(requestObject)  // Empty body for initial request
             });
 
-            if (!initResponse.ok) {
+            if (!scanResponse.ok) {
                 throw new Error('Failed to start scan');
             }
 
-            const initData = await initResponse.json();
-            let sessionId = initData.sessionId;
-            let nextPageToken = initData.nextPageToken;
-            let batchCount = 0;
-            const MAX_BATCHES = 2;  // Limit to 2 batches for testing
+            const sessionData = await scanResponse.json();
+			console.log('sessionData', sessionData)
 
             // Update status with initial stats
             setStatus({
-                status: 'scanning',
-                total_emails: 0,
-                processed_emails: initData.stats.processed,
-                total_documents: initData.stats.documents
+                status: sessionData.complete || !sessionData.nextPageToken ? 'completed' : 'processing',
+                processed_emails: sessionData.stats.processed,
+                total_documents: sessionData.stats.documents,
+				nextPageToken: sessionData.nextPageToken || null,
+				sessionId: sessionData.sessionId || null,
+				error: sessionData.success ? null : 'Failed to scan emails'
             });
 
-            // Process batches until complete or max batches reached
-            while (batchCount < MAX_BATCHES && !initData.isComplete) {
-                // Process next batch
-                const batchResponse = await fetch('/api/gmail/test', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        sessionId,
-                        pageToken: nextPageToken
-                    })
-                });
+			return sessionData
 
-                if (!batchResponse.ok) {
-                    throw new Error('Failed to process batch');
-                }
+		} catch (error) {
+			console.error('Error scanning emails:', error);
+			setError(error instanceof Error ? error.message : 'Failed to scan emails');
+			setIsScanning(false);
+			return null
+		}
 
-                const batchData = await batchResponse.json();
-
-                // Update status with latest stats
-                setStatus({
-                    status: batchData.isComplete ? 'completed' : 'scanning',
-                    total_emails: 0,  // We don't know the total
-                    processed_emails: batchData.stats.processed,
-                    total_documents: batchData.stats.documents
-                });
-
-                // Check if we should continue
-                if (batchData.isComplete) {
-                    break;
-                }
-
-                nextPageToken = batchData.nextPageToken;
-                batchCount++;
-
-                // Add a small delay between batches to prevent rate limiting
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-
-            // Mark as completed after all batches
-            setStatus(prev => ({
-                ...prev,
-                status: 'completed'
-            }));
-
-            onComplete();
-        } catch (error) {
-            console.error('Error scanning emails:', error);
-            setError(error instanceof Error ? error.message : 'Failed to scan emails');
-            setIsScanning(false);
-        }
-    };
+	}
 
     const handleConnect = async () => {
 		const params = new URLSearchParams({

@@ -37,6 +37,7 @@ export const translations = {
                     ]
                 },
                 starting: "Starting email scan...",
+                scanningDescription: "This process can take a few minutes. Please don't close this tab.",
                 emails: "emails processed",
                 documents: "documents found",
                 completed: "Scan completed successfully"
@@ -174,6 +175,7 @@ export const translations = {
                     ]
                 },
                 starting: "Iniciando escaneo de correos...",
+                scanningDescription: "Este proceso puede tardar unos minutos. Por favor, no cierres esta pestaña.",
                 emails: "correos procesados",
                 documents: "documentos encontrados",
                 completed: "Escaneo completado exitosamente"
@@ -276,5 +278,11 @@ export const translations = {
     }
 } as const;
 
+type NestedKeyOf<ObjectType extends object> = {
+    [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends object
+        ? `${Key}` | `${Key}.${NestedKeyOf<ObjectType[Key]>}`
+        : `${Key}`
+}[keyof ObjectType & (string | number)]
+
 export type Language = keyof typeof translations;
-export type TranslationKey = keyof typeof translations.en;
+export type TranslationKey = NestedKeyOf<typeof translations.en>;
