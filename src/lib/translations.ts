@@ -25,8 +25,13 @@ export const translations = {
             connect: {
                 title: "Connect your Gmail",
                 description: "Connect your Gmail account to let helth automatically scan your inbox for medical documents. This is an optional step.",
+                scanTitle: "Scan your documents",
+                scanDescription: "Click on scan documents to start the automatic collection of medical documents from your inbox.",
                 skipDescription: "You can always connect your Gmail account later from your dashboard.",
                 whyConnect: "Why connect Gmail?",
+                connectButton: "Connect Gmail Account",
+                connected: "Gmail Connected",
+                scanButton: "Scan for Medical Documents",
                 benefits: {
                     title: "Benefits of connecting your Gmail:",
                     items: [
@@ -164,8 +169,13 @@ export const translations = {
             connect: {
                 title: "Conecta tu Gmail",
                 description: "Conecta tu cuenta de Gmail si quieres que helth escanee tu correo para extraer tus documentos médicos por ti. Este es un paso opcional.",
+                scanTitle: "Escanea tus documentos",
+                scanDescription: "Haz click en escanear documentos para iniciar el proceso de recolección automática de documentos médicos.",
                 skipDescription: "Siempre puedes conectar tu cuenta de Gmail más tarde desde tu panel de control.",
                 whyConnect: "¿Por qué conectar Gmail?",
+                connectButton: "Conectar Gmail",
+                connected: "Gmail Conectado",
+                scanButton: "Escanear Documentos Médicos",
                 benefits: {
                     title: "Beneficios de conectar tu Gmail y cómo funciona:",
                     items: [

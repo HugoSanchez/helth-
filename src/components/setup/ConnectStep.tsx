@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useTranslation } from '@/hooks/useTranslation'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Search } from 'lucide-react'
 import { cn } from '@/lib/client/utils'
 import type { Preferences } from '@/hooks/usePreferences'
 import { ScanProgress } from './ScanProgress'
@@ -64,31 +64,29 @@ export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
         status: 'idle',
         processed_emails: 0,
         total_documents: 0,
-		nextPageToken: null,
-		sessionId: null,
-		error: null
+        nextPageToken: null,
+        sessionId: null,
+        error: null
     })
     const [error, setError] = useState<string | null>(null)
 
     const handleScan = async () => {
-        if (!status.sessionId &&
-			!status.nextPageToken &&
-			!status.error &&
-			status.status == 'completed'){
-			await triggerScan(null, null)
-		} else if (status.status == 'completed'){
-			onComplete()
-		} else {
-			await triggerScan(status.nextPageToken, status.sessionId)
-		}
-    };
-
-    // Initialize scan if needed
-    if (searchParams.get('scan') === 'true' && !isScanning && status.status !== 'completed') {
         setIsScanning(true)
-        handleScan()
-        // Remove the scan parameter to prevent re-triggering
-        router.replace('?')
+        try {
+            if (!status.sessionId &&
+                !status.nextPageToken &&
+                !status.error &&
+                status.status == 'completed') {
+                await triggerScan(null, null)
+            } else if (status.status == 'completed') {
+                onComplete()
+            } else {
+                await triggerScan(status.nextPageToken, status.sessionId)
+            }
+        } catch (error) {
+            setError(error instanceof Error ? error.message : 'Failed to scan emails')
+            setIsScanning(false)
+        }
     }
 
 	const triggerScan = async (nextPageToken: string | null, sessionId: string | null) => {
@@ -134,16 +132,16 @@ export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
 	}
 
     const handleConnect = async () => {
-		const params = new URLSearchParams({
-			client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
-			redirect_uri: process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI!,
-			response_type: 'code',
-			scope: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email',
-			access_type: 'offline',
-			prompt: 'consent'
-		});
+        const params = new URLSearchParams({
+            client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+            redirect_uri: process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI!,
+            response_type: 'code',
+            scope: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email',
+            access_type: 'offline',
+            prompt: 'consent'
+        });
 
-		window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+        window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
     }
 
     const handleSkip = () => {
@@ -161,9 +159,17 @@ export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
     return (
         <>
             <CardHeader>
-                <CardTitle className="text-4xl py-2 font-bold">{t('setup.connect.title')}</CardTitle>
+                <CardTitle className="text-4xl py-2 font-bold">
+                    {searchParams.get('scan') === 'true'
+                        ? t('setup.connect.scanTitle')
+                        : t('setup.connect.title')
+                    }
+                </CardTitle>
                 <CardDescription className="text-lg font-light">
-                    {t('setup.connect.description')}
+                    {searchParams.get('scan') === 'true'
+                        ? t('setup.connect.scanDescription')
+                        : t('setup.connect.description')
+                    }
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -194,14 +200,26 @@ export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
                         )}
                     </div>
 
-                    <Button
-                        className="w-full h-12 gap-4"
-                        onClick={handleConnect}
-                        disabled={isScanning}
-                    >
-                        <GoogleLogo />
-                        {isScanning ? t('setup.connect.starting') : t('dashboard.scanButton')}
-                    </Button>
+                    <div className="space-y-4">
+                        {searchParams.get('scan') !== 'true' ? (
+                            <Button
+                                className="w-full h-12 gap-4"
+                                onClick={handleConnect}
+                            >
+                                <GoogleLogo />
+                                {t('setup.connect.connectButton')}
+                            </Button>
+                        ) : (
+                            <Button
+                                className="w-full h-12 gap-4"
+                                onClick={handleScan}
+                                disabled={isScanning}
+                            >
+                                <Search className="h-5 w-5" />
+                                {isScanning ? t('setup.connect.starting') : t('setup.connect.scanButton')}
+                            </Button>
+                        )}
+                    </div>
 
                     <div>
                         <Button
