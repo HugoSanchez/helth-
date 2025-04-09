@@ -14,10 +14,14 @@ import { classifyEmails, analyzeDocument } from '@/lib/server/anthropic'
 import { gmail_v1 } from 'googleapis/build/src/apis/gmail/v1'
 import { storeDocument } from '@/lib/server/db'
 import { GaxiosPromise, GaxiosResponse } from 'gaxios'
+import { supabaseAdmin } from '@/lib/server/supabase'
 
 // Maximum number of emails to process in a single batch
 // This helps prevent timeouts and memory issues
 const BATCH_SIZE = 100
+
+// Maximum number of emails to process
+const MAX_EMAILS_TO_PROCESS = 300;
 
 // =============================================================================
 // TYPE DEFINITIONS
@@ -30,7 +34,6 @@ const BATCH_SIZE = 100
  */
 interface ProcessingStats {
     totalProcessed: number;  // Total number of emails examined
-    totalMedical: number;    // Number of emails classified as medical-related
     totalDocuments: number;  // Number of medical documents successfully stored
 }
 
@@ -104,13 +107,15 @@ async function initializeGmailClient(access_token: string): Promise<gmail_v1.Gma
  * @param pageToken - Token for paginated email fetching
  * @param stats - Running statistics object for tracking progress
  * @param userId - User ID for document storage
+ * @param sessionId - Session ID for tracking progress and session completion
  */
 async function processEmailBatch(
     gmail: gmail_v1.Gmail,
     pageToken: string | undefined,
     stats: ProcessingStats,
-    userId: string
-): Promise<void> {
+    userId: string,
+    sessionId: string
+): Promise<{nextPageToken?: string}> {
     try {
         // STEP 1: Fetch Batch of Emails
         // -------------------------------------
@@ -127,7 +132,8 @@ async function processEmailBatch(
         // This prevents unnecessary processing and API calls
         if (!response.data.messages?.length) {
             console.log('No more messages found in this batch')
-            return
+            await markSessionComplete(sessionId)
+            return { nextPageToken: undefined }
         }
 
         // STEP 2: Gather Detailed Email Information
@@ -169,12 +175,9 @@ async function processEmailBatch(
         // -------------------------------------
         // Iterate through classified emails and handle medical content
         for (const classification of classifications) {
-            // Update processing statistics
-            stats.totalProcessed++
 
             // Process only emails classified as medical
             if (classification.isMedical) {
-                stats.totalMedical++
                 const email = emailDetails.find(e => e.id === classification.id)
 
                 // Skip if email has no attachments
@@ -227,9 +230,8 @@ async function processEmailBatch(
                         // Store document if analysis confirms it's medical
                         if (analysis.status === 'success') {
                             const storedDoc = await storeDocument(userId, attachment.filename!, buffer, analysis)
-                            if (storedDoc) {
-                                stats.totalDocuments++
-                            }
+                            // Update doc count.
+							if (storedDoc)  stats.totalDocuments++
                         }
                     } catch (error) {
                         // Log error but continue processing other attachments
@@ -241,16 +243,48 @@ async function processEmailBatch(
             }
         }
 
-        // STEP 10: Handle Pagination
-        // -------------------------------------
-        // Recursively process next batch if more emails exist
-        // This ensures we process all available emails
-        if (response.data.nextPageToken) {
-            await processEmailBatch(gmail, response.data.nextPageToken, stats, userId)
+        // Update session with progress
+        await supabaseAdmin
+            .from('scan_sessions')
+            .update({
+                processed_emails: stats.totalProcessed + BATCH_SIZE,
+                total_documents: stats.totalDocuments,
+                status: stats.totalProcessed + BATCH_SIZE >= MAX_EMAILS_TO_PROCESS ? 'completed' : 'processing'
+            })
+            .eq('id', sessionId)
+
+        // If we've hit our limit, mark as complete and stop
+        if (stats.totalProcessed >= MAX_EMAILS_TO_PROCESS) {
+            await markSessionComplete(sessionId)
+            return { nextPageToken: undefined }
         }
+
+        // Return the next page token
+        return { nextPageToken: response.data.nextPageToken || undefined }
     } catch (error) {
         console.error('Error processing email batch:', error)
         throw error
+    }
+}
+
+// Helper function to mark session as complete and clean up tokens
+async function markSessionComplete(sessionId: string) {
+    const { data: session } = await supabaseAdmin
+        .from('scan_sessions')
+        .update({
+            status: 'completed',
+            completed_at: new Date().toISOString()
+        })
+        .eq('id', sessionId)
+        .select('user_id')
+        .single()
+
+    if (session) {
+        // Clean up Gmail tokens only when session is complete
+        await supabaseAdmin
+            .from('gmail_accounts')
+            .delete()
+            .eq('user_id', session.user_id)
     }
 }
 
@@ -338,43 +372,77 @@ export async function POST(request: Request) {
         // STEP 5: Request Processing
         // -------------------------------------
         // Extract pagination parameters from request
-        const { sessionId, pageToken } = await request.json()
+        const { sessionId: requestedSessionId, pageToken } = await request.json()
 
-        // Initialize statistics tracking
-        const stats: ProcessingStats = {
-            totalProcessed: 0,
-            totalMedical: 0,
-            totalDocuments: 0
+        // STEP 5.1: Session Management
+        // -------------------------------------
+        // Track processing progress across multiple batches using a session
+        // This allows us to maintain state between API calls and handle pagination
+        let sessionId = requestedSessionId
+        let stats: ProcessingStats
+
+        if (!sessionId) {
+            // Create new session if none provided
+            // Initialize all counters to 0 and set status to 'processing'
+            const { data: newSession, error: sessionError } = await supabase
+                .from('scan_sessions')
+                .insert({
+                    user_id: user.id,
+                    status: 'processing',
+                    processed_emails: 0,
+                    total_documents: 0
+                })
+                .select()
+                .single()
+
+            if (sessionError) {
+                console.error('Error creating session:', sessionError)
+                return NextResponse.json(
+                    { error: 'Failed to create scan session' },
+                    { status: 500 }
+                )
+            }
+            sessionId = newSession.id
+            stats = { totalProcessed: 0, totalDocuments: 0 }
+        } else {
+            // Retrieve existing session stats to continue processing
+            // This ensures we maintain accurate counts across multiple API calls
+            const { data: existingSession, error: sessionError } = await supabase
+                .from('scan_sessions')
+                .select('processed_emails, total_documents')
+                .eq('id', sessionId)
+                .single()
+
+            if (sessionError) {
+                console.error('Error retrieving session:', sessionError)
+                return NextResponse.json(
+                    { error: 'Failed to retrieve scan session' },
+                    { status: 500 }
+                )
+            }
+
+            // Initialize stats with existing counts
+            // This allows us to increment from the last saved state
+            stats = {
+                totalProcessed: existingSession.processed_emails,
+                totalDocuments: existingSession.total_documents
+            }
         }
 
         // STEP 6: Email Processing
         // -------------------------------------
-        // Process emails and track statistics
-        await processEmailBatch(gmail, pageToken, stats, user.id)
+        // Process single batch and get next page token
+        const { nextPageToken } = await processEmailBatch(gmail, pageToken, stats, user.id, sessionId)
 
-        // STEP 7: Security Cleanup
+        // STEP 7: Response
         // -------------------------------------
-        // Remove Gmail tokens after processing
-        // This enhances security by limiting token lifetime
-        console.log('[Test] Cleaning up Gmail tokens...')
-        const { error: cleanupError } = await supabase
-            .from('gmail_accounts')
-            .delete()
-            .eq('user_id', user.id)
-
-        if (cleanupError) {
-            console.error('[Test] Error cleaning up Gmail tokens:', cleanupError)
-            // Continue despite cleanup error
-            // The main processing was successful, so we don't fail the request
-        }
-
-        // STEP 8: Response
-        // -------------------------------------
-        // Return success response with processing statistics
+        // Return success response with stats and next page token
         return NextResponse.json({
             success: true,
+			complete: stats.totalProcessed + BATCH_SIZE >= MAX_EMAILS_TO_PROCESS,
             stats,
-            message: "Processing completed and tokens cleaned up"
+            nextPageToken,
+            sessionId
         })
 
     } catch (error) {
@@ -388,3 +456,4 @@ export async function POST(request: Request) {
         )
     }
 }
+
