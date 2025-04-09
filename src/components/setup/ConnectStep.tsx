@@ -4,8 +4,9 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from "@/component
 import { useTranslation } from '@/hooks/useTranslation'
 import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/client/utils'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { ScanStep } from './ScanStep'
 import type { Preferences } from '@/hooks/usePreferences'
-import { useRouter } from 'next/navigation'
 
 function GoogleLogo() {
     return (
@@ -47,7 +48,36 @@ interface ConnectStepProps {
 export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
     const { t } = useTranslation(preferences?.language || 'en')
     const [isExpanded, setIsExpanded] = useState(false)
+    const searchParams = useSearchParams()
     const router = useRouter()
+    const step = searchParams.get('step')
+    const skipped = searchParams.get('skipped') === 'true'
+
+    // If we're on step 3, show either scan or upload based on skip state
+    if (step === '3') {
+        if (skipped) {
+            return (
+                <>
+                    <CardHeader>
+                        <CardTitle className="text-4xl py-2 font-bold">{t('setup.upload.title')}</CardTitle>
+                        <CardDescription className="text-lg font-light">
+                            {t('setup.upload.description')}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {/* TODO: Add your upload component here */}
+                    </CardContent>
+                </>
+            )
+        }
+        return <ScanStep
+            onComplete={onComplete}
+            preferences={preferences}
+            onSkip={() => {
+                router.push('/settings?step=3&skipped=true')
+            }}
+        />
+    }
 
     const handleConnect = async () => {
         const params = new URLSearchParams({
@@ -63,10 +93,7 @@ export function ConnectStep({ onComplete, preferences }: ConnectStepProps) {
     }
 
     const handleSkip = () => {
-        // First update the URL to include skipped parameter
         router.push('/settings?step=3&skipped=true')
-        // Then call onComplete to update the step in the parent
-        onComplete()
     }
 
     return (

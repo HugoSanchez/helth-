@@ -8,8 +8,8 @@ import { ScanProgress } from './ScanProgress'
 
 interface ScanStepProps {
     onComplete: () => void
-    preferences: Preferences | null
     onSkip: () => void
+    preferences: Preferences | null
 }
 
 interface ScanStatus {
@@ -21,7 +21,7 @@ interface ScanStatus {
     sessionId: string | null;
 }
 
-export function ScanStep({ onComplete, preferences, onSkip }: ScanStepProps) {
+export function ScanStep({ onComplete, onSkip, preferences }: ScanStepProps) {
     const { t } = useTranslation(preferences?.language || 'en')
     const [isScanning, setIsScanning] = useState(false)
     const [status, setStatus] = useState<ScanStatus>({

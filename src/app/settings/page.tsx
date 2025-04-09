@@ -1,32 +1,23 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Card } from "@/components/ui/card"
-import { usePreferences, type Preferences } from '@/hooks/usePreferences'
+import { usePreferences } from '@/hooks/usePreferences'
 import { Breadcrumb, type BreadcrumbStep } from '@/components/ui/breadcrumb'
 import { useTranslation } from '@/hooks/useTranslation'
 import { PreferencesStep } from '@/components/setup/PreferencesStep'
 import { ConnectStep } from '@/components/setup/ConnectStep'
-import { FinalStep } from '@/components/setup/FinalStep'
+import { ScanStep } from '@/components/setup/ScanStep'
 import { useSearchParams } from 'next/navigation'
 
 export default function SettingsPage() {
     const searchParams = useSearchParams()
-    const { preferences: initialPreferences, loading: prefsLoading, error: prefsError } = usePreferences()
+    const { preferences, loading: prefsLoading, error: prefsError } = usePreferences()
     const [currentStep, setCurrentStep] = useState(() => {
         const step = searchParams.get('step')
         return step ? parseInt(step) : 1
     })
-    const [preferences, setPreferences] = useState<Preferences | null>(null)
-    const { t } = useTranslation(preferences?.language || initialPreferences?.language || 'en')
-
-    // Check if user has skipped scanning
-    const skipped = searchParams.get('skipped') === 'true'
-
-    // Initialize preferences when they're first loaded
-    if (!preferences && initialPreferences) {
-        setPreferences(initialPreferences)
-    }
+    const { t } = useTranslation(preferences?.language || 'en')
 
     const steps: BreadcrumbStep[] = [
         {
@@ -42,7 +33,7 @@ export default function SettingsPage() {
             onClick: currentStep === 3 ? () => setCurrentStep(2) : undefined
         },
         {
-            label: skipped ? t('setup.steps.ready') : t('setup.steps.scan'),
+            label: t('setup.steps.scan'),
             active: currentStep === 3,
             completed: false
         }
@@ -69,10 +60,6 @@ export default function SettingsPage() {
         )
     }
 
-    const handlePreferencesUpdate = (newPreferences: Preferences) => {
-        setPreferences(newPreferences)
-    }
-
     return (
         <main className="flex justify-center min-h-screen py-10">
             <Card className="w-[600px]">
@@ -84,7 +71,6 @@ export default function SettingsPage() {
                     <PreferencesStep
                         onComplete={() => setCurrentStep(2)}
                         initialPreferences={preferences}
-                        onPreferencesUpdate={handlePreferencesUpdate}
                     />
                 ) : currentStep === 2 ? (
                     <ConnectStep
@@ -92,8 +78,9 @@ export default function SettingsPage() {
                         preferences={preferences}
                     />
                 ) : (
-                    <FinalStep
+                    <ScanStep
                         onComplete={() => {}}
+                        onSkip={() => {}}
                         preferences={preferences}
                     />
                 )}

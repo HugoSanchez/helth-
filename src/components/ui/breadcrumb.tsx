@@ -3,15 +3,15 @@ import { cn } from "@/lib/client/utils"
 import { ChevronRight } from "lucide-react"
 
 export interface BreadcrumbStep {
-  label: string
-  active: boolean
-  completed: boolean
-  onClick?: () => void
+	label: string
+	active: boolean
+	completed: boolean
+	onClick?: () => void
 }
 
 interface BreadcrumbProps {
-  steps: BreadcrumbStep[]
-  className?: string
+	steps: BreadcrumbStep[]
+	className?: string
 }
 
 export function Breadcrumb({ steps, className }: BreadcrumbProps) {
